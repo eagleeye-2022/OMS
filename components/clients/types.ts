@@ -1,0 +1,200 @@
+import type { IClient, ClientType, PaymentTerms, PreferredPaymentMode } from '@/types'
+
+export interface ClientAddressFormValues {
+  pinCode: string
+  city: string
+  state: string
+  country: string
+  landmark: string
+}
+
+export interface ClientEscalationFormValues {
+  recipientName: string
+  email: string
+  mobileNumber: string
+  address: string
+}
+
+export interface ClientAssetFormValue {
+  url: string
+  originalName: string
+  mimeType: string
+  size: number
+  uploadedAt: string
+}
+
+export interface ClientProductPreferenceFormValues {
+  preferredProductCategory: string
+  orderQuantity: string
+  orderNote: string
+}
+
+export interface ClientFormValues {
+  _id?: string
+  companyName: string
+  clientType: ClientType
+  contactPersonName: string
+  designation: string
+  phone: string
+  alternatePhone: string
+  email: string
+  sameAsBilling: boolean
+  billingAddress: ClientAddressFormValues
+  shippingAddress: ClientAddressFormValues
+  gstNumber: string
+  defaultAdvanceRequirement: string
+  defaultPaymentTerms: PaymentTerms | ''
+  customPaymentTerms: string
+  preferredPaymentMode: PreferredPaymentMode | ''
+  invoiceRecipientName: string
+  invoiceEmail: string
+  deliveryDate: string
+  escalationContact: ClientEscalationFormValues
+  assets: {
+    companyLogo?: ClientAssetFormValue
+    brandGuidelines?: ClientAssetFormValue
+    artworkReferences?: ClientAssetFormValue
+    previousDesigns?: ClientAssetFormValue
+  }
+  sharedLinks: {
+    googleDriveFolder: string
+    dropboxFolder: string
+    websiteUrl: string
+    socialMedia: string
+  }
+  productPreferences: ClientProductPreferenceFormValues[]
+  notes: string
+}
+
+export function emptyClientFormValues(): ClientFormValues {
+  return {
+    companyName: '',
+    clientType: 'individual',
+    contactPersonName: '',
+    designation: '',
+    phone: '',
+    alternatePhone: '',
+    email: '',
+    sameAsBilling: true,
+    billingAddress: { pinCode: '', city: '', state: '', country: '', landmark: '' },
+    shippingAddress: { pinCode: '', city: '', state: '', country: '', landmark: '' },
+    gstNumber: '',
+    defaultAdvanceRequirement: '',
+    defaultPaymentTerms: '',
+    customPaymentTerms: '',
+    preferredPaymentMode: '',
+    invoiceRecipientName: '',
+    invoiceEmail: '',
+    deliveryDate: '',
+    escalationContact: { recipientName: '', email: '', mobileNumber: '', address: '' },
+    assets: {},
+    sharedLinks: { googleDriveFolder: '', dropboxFolder: '', websiteUrl: '', socialMedia: '' },
+    productPreferences: [{ preferredProductCategory: '', orderQuantity: '', orderNote: '' }],
+    notes: '',
+  }
+}
+
+function toDateInputValue(date?: string): string {
+  if (!date) return ''
+  return date.slice(0, 10)
+}
+
+export function mapClientToFormValues(client: IClient): ClientFormValues {
+  return {
+    _id: client._id,
+    companyName: client.companyName || '',
+    clientType: client.clientType || 'individual',
+    contactPersonName: client.contactPersonName || '',
+    designation: client.designation || '',
+    phone: client.phone || '',
+    alternatePhone: client.alternatePhone || '',
+    email: client.email || '',
+    sameAsBilling: client.sameAsBilling ?? true,
+    billingAddress: {
+      pinCode: client.billingAddress?.pinCode || '',
+      city: client.billingAddress?.city || '',
+      state: client.billingAddress?.state || '',
+      country: client.billingAddress?.country || '',
+      landmark: client.billingAddress?.landmark || '',
+    },
+    shippingAddress: {
+      pinCode: client.shippingAddress?.pinCode || '',
+      city: client.shippingAddress?.city || '',
+      state: client.shippingAddress?.state || '',
+      country: client.shippingAddress?.country || '',
+      landmark: client.shippingAddress?.landmark || '',
+    },
+    gstNumber: client.gstNumber || '',
+    defaultAdvanceRequirement: client.defaultAdvanceRequirement != null ? String(client.defaultAdvanceRequirement) : '',
+    defaultPaymentTerms: client.defaultPaymentTerms || '',
+    customPaymentTerms: client.customPaymentTerms || '',
+    preferredPaymentMode: client.preferredPaymentMode || '',
+    invoiceRecipientName: client.invoiceRecipientName || '',
+    invoiceEmail: client.invoiceEmail || '',
+    deliveryDate: toDateInputValue(client.deliveryDate),
+    escalationContact: {
+      recipientName: client.escalationContact?.recipientName || '',
+      email: client.escalationContact?.email || '',
+      mobileNumber: client.escalationContact?.mobileNumber || '',
+      address: client.escalationContact?.address || '',
+    },
+    assets: {
+      companyLogo: client.assets?.companyLogo,
+      brandGuidelines: client.assets?.brandGuidelines,
+      artworkReferences: client.assets?.artworkReferences,
+      previousDesigns: client.assets?.previousDesigns,
+    },
+    sharedLinks: {
+      googleDriveFolder: client.sharedLinks?.googleDriveFolder || '',
+      dropboxFolder: client.sharedLinks?.dropboxFolder || '',
+      websiteUrl: client.sharedLinks?.websiteUrl || '',
+      socialMedia: client.sharedLinks?.socialMedia || '',
+    },
+    productPreferences: client.productPreferences?.length
+      ? client.productPreferences.map((p) => ({
+          preferredProductCategory: p.preferredProductCategory || '',
+          orderQuantity: p.orderQuantity != null ? String(p.orderQuantity) : '',
+          orderNote: p.orderNote || '',
+        }))
+      : [{ preferredProductCategory: '', orderQuantity: '', orderNote: '' }],
+    notes: client.notes || '',
+  }
+}
+
+/** Builds the JSON payload sent to POST/PUT /api/clients, stripping form-only concerns. */
+export function buildClientPayload(values: ClientFormValues, status: 'draft' | 'active'): Record<string, unknown> {
+  const cleanProductPreferences = values.productPreferences
+    .filter((p) => p.preferredProductCategory || p.orderQuantity || p.orderNote)
+    .map((p) => ({
+      preferredProductCategory: p.preferredProductCategory,
+      orderQuantity: p.orderQuantity ? Number(p.orderQuantity) : undefined,
+      orderNote: p.orderNote,
+    }))
+
+  return {
+    companyName: values.companyName,
+    clientType: values.clientType,
+    status,
+    contactPersonName: values.contactPersonName,
+    designation: values.designation,
+    phone: values.phone,
+    alternatePhone: values.alternatePhone,
+    email: values.email,
+    sameAsBilling: values.sameAsBilling,
+    billingAddress: values.billingAddress,
+    shippingAddress: values.sameAsBilling ? values.billingAddress : values.shippingAddress,
+    gstNumber: values.gstNumber,
+    defaultAdvanceRequirement: values.defaultAdvanceRequirement ? Number(values.defaultAdvanceRequirement) : undefined,
+    defaultPaymentTerms: values.defaultPaymentTerms || undefined,
+    customPaymentTerms: values.customPaymentTerms,
+    preferredPaymentMode: values.preferredPaymentMode || undefined,
+    invoiceRecipientName: values.invoiceRecipientName,
+    invoiceEmail: values.invoiceEmail,
+    deliveryDate: values.deliveryDate || undefined,
+    escalationContact: values.escalationContact,
+    assets: values.assets,
+    sharedLinks: values.sharedLinks,
+    productPreferences: cleanProductPreferences,
+    notes: values.notes,
+  }
+}
