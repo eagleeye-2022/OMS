@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CheckCircle2, FileText, Send, Cloud, Download, X } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { cn, formatCurrency, formatFileSize } from '@/lib/utils'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile } from '@/lib/upload'
 import { totalGst } from './types'
 import type { IClient, IOrder } from '@/types'
 
@@ -37,6 +38,42 @@ export function InvoiceUploadModal({ order, onClose, onSaved }: InvoiceUploadMod
   const [error, setError] = useState('')
   const [result, setResult] = useState<{ invoiceNumber: string; clientName: string } | null>(null)
 
+  // Pre-fill from the order's existing invoice when reopening to replace it
+  // (e.g. "Replace Invoice" from the preview panel) so swapping just the file
+  // doesn't silently reset invoiceNumber/amount/isFinal/sentToClient back to
+  // form defaults. A brand-new upload (no existing invoice) still starts blank.
+  useEffect(() => {
+    if (!order) return
+    const inv = order.invoice
+    setFile(null)
+    setError('')
+    setResult(null)
+    if (inv) {
+      setInvoiceNumber(inv.invoiceNumber)
+      setInvoiceDate(inv.invoiceDate ? inv.invoiceDate.slice(0, 10) : '')
+      setAmount(String(inv.amount))
+      setDueDate(inv.dueDate ? inv.dueDate.slice(0, 10) : '')
+      setInvoiceType(inv.invoiceType)
+      setCgstPercent(inv.cgstPercent != null ? String(inv.cgstPercent) : '9')
+      setSgstPercent(inv.sgstPercent != null ? String(inv.sgstPercent) : '9')
+      setNotes(inv.notes || '')
+      setSendToClient(inv.sentToClient)
+      setIsFinal(inv.isFinal)
+    } else {
+      setInvoiceNumber('')
+      setInvoiceDate('')
+      setAmount('')
+      setDueDate('')
+      setInvoiceType('tax_invoice')
+      setCgstPercent('9')
+      setSgstPercent('9')
+      setNotes('')
+      setSendToClient(true)
+      setIsFinal(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?._id])
+
   if (!order) return null
 
   const client = order.client as IClient
@@ -51,11 +88,17 @@ export function InvoiceUploadModal({ order, onClose, onSaved }: InvoiceUploadMod
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
-    if (f) {
-      setFile(f)
-      if (!invoiceNumber) setInvoiceNumber(`INV-${order.orderNumber.replace('ORD-', '')}`)
-      if (!amount) setAmount(String(order.totalAmount ?? ''))
+    if (!f) return
+    const validationError = validateUploadFile(f)
+    if (validationError) {
+      setError(validationError)
+      e.target.value = ''
+      return
     }
+    setError('')
+    setFile(f)
+    if (!invoiceNumber) setInvoiceNumber(`INV-${order.orderNumber.replace('ORD-', '')}`)
+    if (!amount) setAmount(String(order.totalAmount ?? ''))
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -144,7 +187,7 @@ export function InvoiceUploadModal({ order, onClose, onSaved }: InvoiceUploadMod
           </div>
         ) : (
           <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-300 rounded-lg py-6 text-sm text-gray-500 cursor-pointer hover:border-gray-400">
-            <input type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
+            <input type="file" accept={ALLOWED_UPLOAD_ACCEPT} className="hidden" onChange={handleFile} />
             Click to select an invoice file (PDF, image)
           </label>
         )}

@@ -127,12 +127,15 @@ export default function ClientsPage() {
         />
       </div>
 
-      <ClientWizard
-        open={wizardOpen}
-        initialClient={editingClient}
-        onClose={() => setWizardOpen(false)}
-        onSaved={handleWizardSaved}
-      />
+      {wizardOpen && (
+        <ClientWizard
+          key={editingClient?._id ?? 'new'}
+          open={wizardOpen}
+          initialClient={editingClient}
+          onClose={() => setWizardOpen(false)}
+          onSaved={handleWizardSaved}
+        />
+      )}
     </div>
   )
 }

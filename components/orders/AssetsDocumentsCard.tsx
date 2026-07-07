@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { FileText, ExternalLink, Plus, Upload, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile } from '@/lib/upload'
 import type { IOrder } from '@/types'
 
 interface AssetsDocumentsCardProps {
@@ -51,6 +52,12 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
 
   const handleFileUpload = async (file: File | undefined) => {
     if (!file) return
+    const validationError = validateUploadFile(file)
+    if (validationError) {
+      setError(validationError)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
     setUploading(true)
     setError('')
     try {
@@ -86,7 +93,7 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
           </div>
         )}
       </div>
-      <input ref={fileInputRef} type="file" className="hidden" accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf" onChange={(e) => handleFileUpload(e.target.files?.[0])} />
+      <input ref={fileInputRef} type="file" className="hidden" accept={ALLOWED_UPLOAD_ACCEPT} onChange={(e) => handleFileUpload(e.target.files?.[0])} />
 
       {addingLink && (
         <form onSubmit={handleAddLink} className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">

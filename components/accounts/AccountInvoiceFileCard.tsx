@@ -2,6 +2,7 @@
 
 import { FileText, Download, Eye, Upload } from 'lucide-react'
 import { formatDate, formatFileSize } from '@/lib/utils'
+import { downloadRemoteFile } from '@/lib/upload'
 import type { IOrder } from '@/types'
 
 interface AccountInvoiceFileCardProps {
@@ -36,9 +37,13 @@ export function AccountInvoiceFileCard({ order, onUpload, onPreview }: AccountIn
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a href={invoice.fileUrl} download className="text-gray-400 hover:text-gray-600" title="Download">
+            <button
+              onClick={() => downloadRemoteFile(invoice.fileUrl!, invoice.fileName || `${invoice.invoiceNumber}.pdf`)}
+              className="text-gray-400 hover:text-gray-600"
+              title="Download"
+            >
               <Download size={15} />
-            </a>
+            </button>
             <button onClick={onPreview} className="text-gray-400 hover:text-gray-600" title="View Preview">
               <Eye size={15} />
             </button>

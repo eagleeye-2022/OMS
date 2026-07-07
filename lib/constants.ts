@@ -180,13 +180,16 @@ export const NOTIFICATION_TYPE = {
 // correctly include accounts and must NOT be removed when reconciling this
 // list — those are Shipping/Accounts-module rights riding the shared
 // endpoint, not Orders-module rights.
+// 'settings' is granted to every role, not just admin — it's the self-service
+// profile/password page (see app/(dashboard)/settings/), so it's appended to
+// every list below rather than gating it like the operational modules above.
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   admin: ['dashboard', 'clients', 'orders', 'creative-queue', 'production', 'shipping', 'accounts', 'user-roles', 'settings'],
-  sales: ['clients', 'orders', 'shipping'],
-  creative: ['creative-queue'],
-  production: ['production'],
-  shipping: [],
-  accounts: ['accounts', 'shipping'],
+  sales: ['clients', 'orders', 'shipping', 'settings'],
+  creative: ['creative-queue', 'settings'],
+  production: ['production', 'settings'],
+  shipping: ['settings'],
+  accounts: ['accounts', 'shipping', 'settings'],
 }
 
 // The 'shipping' role has no module permissions of its own (see above). Its

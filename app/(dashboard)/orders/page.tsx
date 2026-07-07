@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
@@ -12,6 +13,8 @@ import type { IActivityLog, IOrder } from '@/types'
 
 export default function OrdersPage() {
   const { user } = useAuth()
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [orders, setOrders] = useState<IOrder[]>([])
   const [total, setTotal] = useState(0)
   const [listLoading, setListLoading] = useState(true)
@@ -71,6 +74,17 @@ export default function OrdersPage() {
   const handleCreate = () => { setEditingOrder(null); setModalOpen(true) }
   const handleEdit = () => { if (selectedOrder) { setEditingOrder(selectedOrder); setModalOpen(true) } }
 
+  useEffect(() => {
+    if (searchParams.get('new') === '1' && canCreate) {
+      handleCreate()
+      router.replace('/orders')
+    }
+    // Only ever consume the `?new=1` deep link (from the dashboard's quick-add
+    // button) once per navigation — re-running on every dep change would
+    // reopen the modal right after the user closes it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, canCreate])
+
   const handleModalSaved = () => {
     loadList(search, stage)
     if (selectedId) loadDetail(selectedId)
@@ -127,12 +141,15 @@ export default function OrdersPage() {
         />
       </div>
 
-      <CreateOrderModal
-        open={modalOpen}
-        initialOrder={editingOrder}
-        onClose={() => setModalOpen(false)}
-        onSaved={handleModalSaved}
-      />
+      {modalOpen && (
+        <CreateOrderModal
+          key={editingOrder?._id ?? 'new'}
+          open={modalOpen}
+          initialOrder={editingOrder}
+          onClose={() => setModalOpen(false)}
+          onSaved={handleModalSaved}
+        />
+      )}
     </div>
   )
 }

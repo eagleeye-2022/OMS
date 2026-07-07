@@ -48,6 +48,7 @@ export function RecordPaymentModal({ open, onClose, onSaved }: RecordPaymentModa
           />
           {selected && (
             <RecordPaymentForm
+              key={selected._id}
               order={selected}
               onRecorded={(p) => { setReceipt(p); onSaved() }}
             />

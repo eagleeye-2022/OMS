@@ -38,7 +38,15 @@ export interface ClientFormValues {
   phone: string
   alternatePhone: string
   email: string
-  sameAsBilling: boolean
+  /**
+   * Form-only name for the DB/API's `sameAsBilling` flag — kept distinct here
+   * because "sameAsBilling" reads as "shipping mirrors billing" when the
+   * actual direction is the reverse: Shipping is what the user fills in
+   * first, and Billing mirrors it while this is on. Mapped to/from
+   * `sameAsBilling` in mapClientToFormValues/buildClientPayload below; the
+   * wire format and DB schema field name are unchanged.
+   */
+  billingSameAsShipping: boolean
   billingAddress: ClientAddressFormValues
   shippingAddress: ClientAddressFormValues
   gstNumber: string
@@ -75,7 +83,7 @@ export function emptyClientFormValues(): ClientFormValues {
     phone: '',
     alternatePhone: '',
     email: '',
-    sameAsBilling: true,
+    billingSameAsShipping: true,
     billingAddress: { pinCode: '', city: '', state: '', country: '', landmark: '' },
     shippingAddress: { pinCode: '', city: '', state: '', country: '', landmark: '' },
     gstNumber: '',
@@ -109,7 +117,7 @@ export function mapClientToFormValues(client: IClient): ClientFormValues {
     phone: client.phone || '',
     alternatePhone: client.alternatePhone || '',
     email: client.email || '',
-    sameAsBilling: client.sameAsBilling ?? true,
+    billingSameAsShipping: client.sameAsBilling ?? true,
     billingAddress: {
       pinCode: client.billingAddress?.pinCode || '',
       city: client.billingAddress?.city || '',
@@ -180,9 +188,9 @@ export function buildClientPayload(values: ClientFormValues, status: 'draft' | '
     phone: values.phone,
     alternatePhone: values.alternatePhone,
     email: values.email,
-    sameAsBilling: values.sameAsBilling,
-    billingAddress: values.billingAddress,
-    shippingAddress: values.sameAsBilling ? values.billingAddress : values.shippingAddress,
+    sameAsBilling: values.billingSameAsShipping,
+    billingAddress: values.billingSameAsShipping ? values.shippingAddress : values.billingAddress,
+    shippingAddress: values.shippingAddress,
     gstNumber: values.gstNumber,
     defaultAdvanceRequirement: values.defaultAdvanceRequirement ? Number(values.defaultAdvanceRequirement) : undefined,
     defaultPaymentTerms: values.defaultPaymentTerms || undefined,

@@ -51,12 +51,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       sentToClient: false,
     }
 
+    const wasSent = Boolean(existing.invoice?.sentToClient)
     const { sentToClient, ...rest } = parsed.data
     Object.assign(current, rest)
 
     if (sentToClient !== undefined) {
       current.sentToClient = sentToClient
-      if (sentToClient) current.sentAt = new Date()
+      // Only stamp a fresh sentAt on the actual false→true transition —
+      // otherwise every subsequent PATCH (e.g. replacing the file while
+      // sentToClient stays true) would keep bumping the "sent" timestamp
+      // even though nothing was actually resent to the client.
+      if (sentToClient && !wasSent) current.sentAt = new Date()
     }
 
     if (isNew || 'fileUrl' in body) {

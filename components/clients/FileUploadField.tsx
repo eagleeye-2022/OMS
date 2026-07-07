@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { Upload, FileText, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile } from '@/lib/upload'
 import type { ClientAssetFormValue } from './types'
 
 interface FileUploadFieldProps {
@@ -23,6 +24,13 @@ export function FileUploadField({ label, clientId, field, value, onChange }: Fil
     if (!file) return
     if (!clientId) {
       setError('Save this client first (Continue from Step 1) before uploading files')
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+    const validationError = validateUploadFile(file)
+    if (validationError) {
+      setError(validationError)
+      if (inputRef.current) inputRef.current.value = ''
       return
     }
     setError('')
@@ -81,7 +89,7 @@ export function FileUploadField({ label, clientId, field, value, onChange }: Fil
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf"
+        accept={ALLOWED_UPLOAD_ACCEPT}
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0])}
       />

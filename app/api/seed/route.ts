@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST() {
   if (process.env.NODE_ENV === 'production') {
+    console.warn('[seed] Blocked POST /api/seed in production')
     return NextResponse.json({ success: false, error: 'Seed is disabled in production' }, { status: 403 })
   }
 
@@ -478,6 +479,13 @@ export async function POST() {
 }
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') {
+    // This previously returned the demo credentials to anyone, unauthenticated,
+    // in every environment including production — fixed to respect the same
+    // production guard as POST instead of leaking passwords publicly.
+    return NextResponse.json({ success: false, error: 'Seed is disabled in production' }, { status: 403 })
+  }
+
   return NextResponse.json({
     message: 'POST to this endpoint to seed the database',
     credentials: {

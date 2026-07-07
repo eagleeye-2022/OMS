@@ -10,6 +10,7 @@ import { DataTable } from '@/components/ui/DataTable'
 import { Avatar } from '@/components/ui/Avatar'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { formatDate } from '@/lib/utils'
+import { ROLE_PERMISSIONS } from '@/lib/constants'
 import type { IUser, Role } from '@/types'
 
 const ROLES: Role[] = ['admin', 'sales', 'creative', 'production', 'shipping', 'accounts']
@@ -23,14 +24,25 @@ const ROLE_COLOR: Record<Role, string> = {
   accounts: 'bg-green-100 text-green-700',
 }
 
-const ROLE_PERMISSIONS_DISPLAY: Record<Role, string[]> = {
-  admin: ['Dashboard', 'Clients', 'Orders', 'Creative Queue', 'Production', 'Shipping', 'Accounts', 'Notifications', 'User Roles', 'Settings'],
-  sales: ['Dashboard', 'Clients', 'Orders', 'Notifications'],
-  creative: ['Creative Queue', 'Notifications'],
-  production: ['Production Queue', 'Notifications'],
-  shipping: ['Shipping', 'Notifications'],
-  accounts: ['Accounts', 'Notifications'],
+const MODULE_LABEL: Record<string, string> = {
+  dashboard: 'Dashboard',
+  clients: 'Clients',
+  orders: 'Orders',
+  'creative-queue': 'Creative Queue',
+  production: 'Production Queue',
+  shipping: 'Shipping',
+  accounts: 'Accounts',
+  'user-roles': 'User Roles',
+  settings: 'Settings',
 }
+
+// Derived from the real ROLE_PERMISSIONS matrix (lib/constants.ts) rather than
+// a hand-maintained duplicate, so this admin-facing summary can't drift out
+// of sync with what each role can actually reach. Notifications are appended
+// separately since every logged-in user gets them regardless of module access.
+const ROLE_PERMISSIONS_DISPLAY: Record<Role, string[]> = Object.fromEntries(
+  ROLES.map((role) => [role, [...ROLE_PERMISSIONS[role].map((m) => MODULE_LABEL[m] || m), 'Notifications']])
+) as Record<Role, string[]>
 
 function UserFormModal({ user, onSave, onClose }: { user?: IUser | null; onSave: () => void; onClose: () => void }) {
   const isEdit = !!user

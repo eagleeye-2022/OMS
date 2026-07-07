@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { put } from '@vercel/blob'
+import { put, BlobError } from '@vercel/blob'
 import { getSession } from '@/lib/auth'
+import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_FILE_SIZE } from '@/lib/upload'
 
-const ALLOWED_MIME_TYPES = new Set([
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/webp',
-  'image/svg+xml',
-  'application/pdf',
-])
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_MIME_TYPES = new Set<string>(ALLOWED_UPLOAD_MIME_TYPES)
 
 const CLIENT_UPLOAD_ROLES = ['admin', 'sales']
 const ORDER_UPLOAD_ROLES = ['admin', 'sales', 'creative', 'production', 'accounts']
@@ -59,7 +51,7 @@ export async function POST(req: NextRequest) {
     if (!ALLOWED_MIME_TYPES.has(file.type)) {
       return NextResponse.json({ success: false, error: 'Unsupported file type. Allowed: PNG, JPG, WEBP, SVG, PDF' }, { status: 400 })
     }
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_UPLOAD_FILE_SIZE) {
       return NextResponse.json({ success: false, error: 'File exceeds the 10MB size limit' }, { status: 400 })
     }
 
@@ -92,6 +84,14 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (err) {
+    // Vercel Blob throws a typed, human-readable BlobError (e.g. "Cannot use
+    // public access on a private store", missing/invalid token, store
+    // suspended, file too large) — surface that message directly instead of
+    // masking a diagnosable storage-config problem as a generic 500.
+    if (err instanceof BlobError) {
+      console.error('[upload] Vercel Blob error:', err.message)
+      return NextResponse.json({ success: false, error: `File storage error: ${err.message}` }, { status: 502 })
+    }
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
   }

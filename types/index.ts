@@ -223,7 +223,11 @@ export interface IOrder {
   creativeRemarks?: string
   productionRemarks?: string
   revisionHistory: RevisionEntry[]
-  assignedTeam: IAssignedTeam
+  // Genuinely absent (not just empty) until the first team-assignment call —
+  // Mongoose's default `{}` for this subdocument gets stripped by `minimize`
+  // when saved with no sub-fields set, since order creation never sends this
+  // key at all. Always optional-chain reads of this.
+  assignedTeam?: IAssignedTeam
   createdBy: IUser | string
   createdAt: string
   updatedAt: string

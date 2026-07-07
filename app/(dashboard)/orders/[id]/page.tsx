@@ -52,12 +52,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         onRefresh={load}
       />
 
-      <CreateOrderModal
-        open={modalOpen}
-        initialOrder={order}
-        onClose={() => setModalOpen(false)}
-        onSaved={load}
-      />
+      {modalOpen && (
+        <CreateOrderModal
+          open={modalOpen}
+          initialOrder={order}
+          onClose={() => setModalOpen(false)}
+          onSaved={load}
+        />
+      )}
     </div>
   )
 }

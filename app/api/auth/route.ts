@@ -14,15 +14,29 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  let body: { email?: string; password?: string }
   try {
-    const body = await req.json()
-    const { email, password } = body
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ success: false, error: 'Invalid request body' }, { status: 400 })
+  }
 
-    if (!email || !password) {
-      return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 })
-    }
+  const { email, password } = body
+  if (!email || !password) {
+    return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 })
+  }
 
+  try {
     await connectDB()
+  } catch (err) {
+    // Distinct log tag from the "Invalid credentials" path below, so a
+    // misconfigured MONGODB_URI/DB outage doesn't get mistaken for someone
+    // just typing the wrong password.
+    console.error('[auth] Login failed — database unavailable:', err instanceof Error ? err.message : err)
+    return NextResponse.json({ success: false, error: 'Service temporarily unavailable' }, { status: 503 })
+  }
+
+  try {
     const user = await User.findOne({ email: email.toLowerCase(), isActive: true }).select('+password')
     if (!user || !(await user.comparePassword(password))) {
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
@@ -42,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: sessionUser })
   } catch (err) {
-    console.error('Login error:', err)
+    console.error('[auth] Login error:', err instanceof Error ? err.message : err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
   }
 }

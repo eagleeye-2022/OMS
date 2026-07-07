@@ -32,7 +32,7 @@ export function AssignedTeamCard({ order, canEdit, onUpdated }: AssignedTeamCard
   }, [editing, options, order._id])
 
   const startEdit = () => {
-    const team = order.assignedTeam
+    const team = order.assignedTeam ?? {}
     setError('')
     setForm({
       salesExecutive: typeof team.salesExecutive === 'string' ? team.salesExecutive : team.salesExecutive?._id || '',
@@ -83,7 +83,7 @@ export function AssignedTeamCard({ order, canEdit, onUpdated }: AssignedTeamCard
 
       <div className="space-y-3">
         {SLOTS.map((slot) => {
-          const name = memberName(order.assignedTeam[slot.key])
+          const name = memberName(order.assignedTeam?.[slot.key])
           return (
             <div key={slot.key}>
               {editing ? (

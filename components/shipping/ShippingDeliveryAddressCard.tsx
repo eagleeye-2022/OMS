@@ -11,7 +11,10 @@ export function ShippingDeliveryAddressCard({ order }: ShippingDeliveryAddressCa
   const client = order.client as IClient
   if (!client || typeof client === 'string') return null
 
-  const address = client.sameAsBilling ? client.billingAddress : client.shippingAddress
+  // Always the shipping address — it's kept in sync with billing whenever
+  // sameAsBilling is on, so it's the correct delivery address either way,
+  // and doesn't depend on that invariant holding for legacy/imported records.
+  const address = client.shippingAddress
   const addressLine = [address?.landmark, address?.city, address?.state, address?.pinCode]
     .filter(Boolean)
     .join(', ')
