@@ -1,5 +1,26 @@
 import mongoose from 'mongoose'
 
+// Side-effect-only imports so every model schema is registered with
+// Mongoose wherever connectDB() is called — not just in routes that also
+// reference the model as a value. Each Next.js API route is bundled into
+// its own isolated serverless function; a route that only does
+// `Order.find().populate('client')` without ever calling `Client.anything()`
+// has its `import Client from '@/models/Client'` binding tree-shaken away in
+// production (this doesn't happen locally, where one long-running dev
+// process keeps every model registered once any route has touched it) —
+// causing a `MissingSchemaError: Schema hasn't been registered for model
+// "Client"` at runtime. Confirmed in production on /api/dashboard and
+// /api/notifications. Side-effect imports (no binding) can't be tree-shaken,
+// so registering all models here guarantees populate() always works.
+import '@/models/User'
+import '@/models/Client'
+import '@/models/Order'
+import '@/models/Payment'
+import '@/models/ActivityLog'
+import '@/models/Notification'
+import '@/models/Product'
+import '@/models/Inventory'
+
 interface MongooseCache {
   conn: typeof mongoose | null
   promise: Promise<typeof mongoose> | null
