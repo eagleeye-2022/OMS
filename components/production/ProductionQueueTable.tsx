@@ -5,7 +5,10 @@ import { Badge } from '@/components/ui/Badge'
 import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, getDaysUntilDeadline } from '@/lib/utils'
-import { PRODUCTION_STAGE_KEYS, PRODUCTION_STAGE_KEY_LABEL, PRODUCTION_STAGE_STATUS_LABEL, PRODUCTION_STAGE_STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR } from '@/lib/constants'
+import {
+  PRODUCTION_STAGE_KEYS, PRODUCTION_STAGE_KEY_LABEL, PRODUCTION_STAGE_STATUS_LABEL, PRODUCTION_STAGE_STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR,
+  getProductionWorkflowState, PRODUCTION_WORKFLOW_STATE_LABEL, PRODUCTION_WORKFLOW_STATE_COLOR,
+} from '@/lib/constants'
 import type { IClient, IOrder, IUser } from '@/types'
 
 interface ProductionQueueTableProps {
@@ -45,6 +48,12 @@ export function ProductionQueueTable({ orders, loading, search, selectedId, onSe
             key: 'orderNumber', header: 'Order', render: (row) => (
               <span className={cn('text-sm font-bold', selectedId === row._id ? 'text-blue-600' : 'text-gray-900')}>{row.orderNumber as string}</span>
             ),
+          },
+          {
+            key: 'workflowState', header: 'Status', render: (row) => {
+              const state = getProductionWorkflowState((row as unknown as IOrder).status)
+              return <Badge label={PRODUCTION_WORKFLOW_STATE_LABEL[state]} className={PRODUCTION_WORKFLOW_STATE_COLOR[state]} />
+            },
           },
           {
             key: 'client', header: 'Client', render: (row) => {

@@ -54,6 +54,8 @@ export interface ClientFormValues {
   defaultPaymentTerms: PaymentTerms | ''
   customPaymentTerms: string
   preferredPaymentMode: PreferredPaymentMode | ''
+  /** Sales-reference estimate of typical order size, not a real order total. */
+  typicalOrderValue: string
   invoiceRecipientName: string
   invoiceEmail: string
   deliveryDate: string
@@ -91,6 +93,7 @@ export function emptyClientFormValues(): ClientFormValues {
     defaultPaymentTerms: '',
     customPaymentTerms: '',
     preferredPaymentMode: '',
+    typicalOrderValue: '',
     invoiceRecipientName: '',
     invoiceEmail: '',
     deliveryDate: '',
@@ -137,6 +140,7 @@ export function mapClientToFormValues(client: IClient): ClientFormValues {
     defaultPaymentTerms: client.defaultPaymentTerms || '',
     customPaymentTerms: client.customPaymentTerms || '',
     preferredPaymentMode: client.preferredPaymentMode || '',
+    typicalOrderValue: client.typicalOrderValue != null ? String(client.typicalOrderValue) : '',
     invoiceRecipientName: client.invoiceRecipientName || '',
     invoiceEmail: client.invoiceEmail || '',
     deliveryDate: toDateInputValue(client.deliveryDate),
@@ -196,6 +200,7 @@ export function buildClientPayload(values: ClientFormValues, status: 'draft' | '
     defaultPaymentTerms: values.defaultPaymentTerms || undefined,
     customPaymentTerms: values.customPaymentTerms,
     preferredPaymentMode: values.preferredPaymentMode || undefined,
+    typicalOrderValue: values.typicalOrderValue ? Number(values.typicalOrderValue) : undefined,
     invoiceRecipientName: values.invoiceRecipientName,
     invoiceEmail: values.invoiceEmail,
     deliveryDate: values.deliveryDate || undefined,

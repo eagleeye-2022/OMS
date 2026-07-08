@@ -4,15 +4,22 @@ import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
-import { PRODUCTION_STAGE_KEYS } from '@/lib/constants'
+import { PRODUCTION_STAGE_KEYS, getProductionBlockReason } from '@/lib/constants'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS } from '@/lib/order-visibility'
 
-// Statuses production-complete may still fire from. Anything else means the
-// order has already moved past production once (shipping_ready and beyond)
-// or is off the normal path (cancelled) — re-running the action from one of
-// those must never regress status, courier/dispatch progress, or paid
-// invoice state back to 'shipping_ready'.
-const PRE_COMPLETION_STATUSES = ['pending', 'design_review', 'design_approved', 'in_production', 'quality_check', 'delayed']
+// Statuses production-complete may still fire from. Excludes 'pending' and
+// 'design_review' — production can't be "complete" on an order whose design
+// was never approved in the first place (mirrors PRE_DESIGN_APPROVAL_STATUSES
+// in lib/constants.ts; the productionStages checklist guard below already
+// makes this practically unreachable via the UI, but the endpoint shouldn't
+// trust that alone). 'delayed' stays in this list for admin (who can still
+// resolve a hold by completing it) but is blocked for the production role
+// specifically below, via the same on-hold rule as the stage-update intents.
+// Anything past this list means the order has already moved past production
+// once (shipping_ready and beyond) or is off the normal path (cancelled) —
+// re-running the action from one of those must never regress status,
+// courier/dispatch progress, or paid invoice state back to 'shipping_ready'.
+const PRE_COMPLETION_STATUSES = ['design_approved', 'in_production', 'quality_check', 'delayed']
 
 /**
  * Explicit, auditable "Mark Production Complete" action. Deliberately a
@@ -50,6 +57,13 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
         },
         { status: 409 }
       )
+    }
+
+    if (session.role === 'production') {
+      const blockReason = getProductionBlockReason(existing.status)
+      if (blockReason) {
+        return NextResponse.json({ success: false, error: blockReason }, { status: 409 })
+      }
     }
 
     const incompleteStage = PRODUCTION_STAGE_KEYS.find((key) => existing.productionStages[key].status !== 'completed')

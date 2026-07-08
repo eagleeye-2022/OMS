@@ -13,6 +13,7 @@ import {
   updateShippingDetailsSchema,
 } from '@/validations/order.schema'
 import { applyDirectStatusUpdate } from '@/lib/order-status'
+import { getProductionBlockReason } from '@/lib/constants'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS } from '@/lib/order-visibility'
 import { PRODUCTION_STAGE_KEY_LABEL, type ProductionStage } from '@/lib/constants'
 
@@ -145,6 +146,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           { status: 403 }
         )
       }
+      if (role === 'production') {
+        const blockReason = getProductionBlockReason(existing.status)
+        if (blockReason) {
+          return NextResponse.json({ success: false, error: blockReason }, { status: 409 })
+        }
+      }
 
       const parsed = updateProductionStageSchema.safeParse(body)
       if (!parsed.success) {
@@ -190,6 +197,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           { success: false, error: 'Only the production team or admin can update production progress' },
           { status: 403 }
         )
+      }
+      if (role === 'production') {
+        const blockReason = getProductionBlockReason(existing.status)
+        if (blockReason) {
+          return NextResponse.json({ success: false, error: blockReason }, { status: 409 })
+        }
       }
 
       const parsed = updateProductionStageProgressSchema.safeParse(body)

@@ -81,18 +81,16 @@ export function AccountOrderDetailPanel({ order, logs, loading, onUpdated, onClo
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Specifications</h3>
-          <div className="space-y-2.5 text-sm">
-            <div className="flex justify-between"><span className="text-gray-400">Category</span><span className="font-medium text-gray-900">{order.category}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">Print Type</span><span className="font-medium text-gray-900">{order.productType}</span></div>
-            <div className="flex justify-between"><span className="text-gray-400">Quantity</span><span className="font-medium text-gray-900">{order.quantity.toLocaleString()} units</span></div>
-            {order.sizeBreakdown && <div className="flex justify-between"><span className="text-gray-400">Sizes</span><span className="font-medium text-gray-900 text-right">{order.sizeBreakdown}</span></div>}
-          </div>
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Specifications</h3>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
+          <div><span className="text-gray-400 block">Category</span><span className="font-medium text-gray-900">{order.category}</span></div>
+          <div><span className="text-gray-400 block">Print Type</span><span className="font-medium text-gray-900">{order.productType}</span></div>
+          <div><span className="text-gray-400 block">Quantity</span><span className="font-medium text-gray-900">{order.quantity.toLocaleString()} units</span></div>
+          {order.sizeBreakdown && <div><span className="text-gray-400 block">Sizes</span><span className="font-medium text-gray-900">{order.sizeBreakdown}</span></div>}
         </div>
-        <RecordPaymentForm order={order} onRecorded={(p) => { setReceipt(p); onUpdated() }} />
       </div>
+      <RecordPaymentForm order={order} onRecorded={(p) => { setReceipt(p); onUpdated() }} />
 
       <PaymentSummaryCard order={order} />
       <AccountInvoiceFileCard order={order} onUpload={() => onUpload(order)} onPreview={() => onPreview(order)} />

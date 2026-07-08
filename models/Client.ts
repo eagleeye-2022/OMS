@@ -48,6 +48,13 @@ export interface IClientDocument extends Document {
   defaultPaymentTerms?: PaymentTerms
   customPaymentTerms?: string
   preferredPaymentMode?: PreferredPaymentMode
+  /**
+   * Sales-reference estimate of this client's typical order size, captured
+   * at billing time — NOT a real order total (orders are created and priced
+   * in the Orders module) and not a credit limit/enforcement figure. Purely
+   * informational, same spirit as productPreferences.
+   */
+  typicalOrderValue?: number
   invoiceRecipientName?: string
   invoiceEmail?: string
   deliveryDate?: Date
@@ -137,6 +144,7 @@ const ClientSchema = new Schema<IClientDocument>(
     },
     customPaymentTerms: { type: String },
     preferredPaymentMode: { type: String, enum: ['bank_transfer', 'upi', 'cheque', 'cash'] },
+    typicalOrderValue: { type: Number, min: 0 },
     invoiceRecipientName: { type: String, trim: true },
     invoiceEmail: { type: String, trim: true, lowercase: true },
     deliveryDate: { type: Date },

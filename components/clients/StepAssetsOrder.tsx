@@ -43,14 +43,17 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
       </div>
 
       <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Details</h3>
-        <Input label="Delivery Date *" type="date" error={errors.deliveryDate?.message} {...register('deliveryDate')} />
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Order Preferences</h3>
+        <p className="text-xs text-gray-400 mb-3">
+          For sales reference only — this does not place an order. Create an actual order for this client from the Orders tab once they&apos;re saved.
+        </p>
+        <Input label="Expected Delivery Date *" type="date" error={errors.deliveryDate?.message} {...register('deliveryDate')} />
 
         {fields.map((field, index) => (
           <div key={field.id} className={index > 0 ? 'mt-4 pt-4 border-t border-gray-200' : 'mt-4'}>
             {index > 0 && (
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Order Details</h4>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Additional Preference</h4>
                 <button type="button" onClick={() => remove(index)} className="text-xs text-red-600 hover:underline">Remove</button>
               </div>
             )}
@@ -62,7 +65,7 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
                 {...register(`productPreferences.${index}.preferredProductCategory`)}
               />
               <Input
-                label="Order Quantity*"
+                label="Preferred Quantity*"
                 type="number"
                 min={1}
                 placeholder="Optional"
@@ -72,8 +75,8 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
             </div>
             <div className="mt-4">
               <Textarea
-                label="Order Note*"
-                placeholder="Detail Description of order like color, size..."
+                label="Note*"
+                placeholder="Detail description of what they typically order — color, size..."
                 error={errors.productPreferences?.[index]?.orderNote?.message}
                 {...register(`productPreferences.${index}.orderNote`)}
               />

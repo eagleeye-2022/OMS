@@ -15,7 +15,7 @@ import { emptyClientFormValues, mapClientToFormValues, buildClientPayload, type 
 import type { IClient } from '@/types'
 
 const STEP_LABELS = ['Basic Info', 'Billing Details', 'Assets & Order']
-const STEP_SUBTITLES = ['Step 1 of 3: Primary Identification', 'Step 2 of 3: Billing Details', 'Step 3 of 3: Assets & Order Details']
+const STEP_SUBTITLES = ['Step 1 of 3: Primary Identification', 'Step 2 of 3: Billing Details', 'Step 3 of 3: Assets & Order Preferences']
 
 function applyZodErrors(schema: ZodType, values: unknown, setError: UseFormSetError<ClientFormValues>): boolean {
   const result = schema.safeParse(values)

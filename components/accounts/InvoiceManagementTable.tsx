@@ -17,7 +17,14 @@ interface InvoiceManagementTableProps {
 }
 
 export function InvoiceManagementTable({ orders, loading, onSelect, onUpload, onPreview }: InvoiceManagementTableProps) {
-  const rows = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  // Nearest invoice due date first; orders with no invoice/due date yet fall
+  // to the end, tiebroken by most-recently-created (the prior default sort).
+  const rows = [...orders].sort((a, b) => {
+    const aDue = a.invoice?.dueDate ? new Date(a.invoice.dueDate).getTime() : Infinity
+    const bDue = b.invoice?.dueDate ? new Date(b.invoice.dueDate).getTime() : Infinity
+    if (aDue !== bDue) return aDue - bDue
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
 
   if (!loading && rows.length === 0) {
     return (

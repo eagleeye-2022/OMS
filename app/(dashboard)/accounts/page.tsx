@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { AccountsHeader } from '@/components/accounts/AccountsHeader'
 import { AccountsSummaryCards } from '@/components/accounts/AccountsSummaryCards'
 import { OutstandingPaymentsTable } from '@/components/accounts/OutstandingPaymentsTable'
@@ -39,31 +39,45 @@ export default function AccountsPage() {
   const [previewOrder, setPreviewOrder] = useState<IOrder | null>(null)
   const [reminderOrder, setReminderOrder] = useState<IOrder | null>(null)
 
+  // Track the most recently *issued* request for each async path so an
+  // out-of-order response (e.g. a slower load() call from an earlier action
+  // arriving after a faster one from a later action) can be detected and
+  // discarded instead of overwriting newer, correct data. `load()` has no
+  // natural key (it always re-fetches the same full list+summary), so it
+  // uses a simple incrementing generation counter instead of an id/search key.
+  const loadGenerationRef = useRef(0)
+  const latestOrderIdRef = useRef<string | undefined>(undefined)
+  const latestPreviewIdRef = useRef<string | undefined>(undefined)
+
   const load = useCallback(async (silent = false) => {
+    const generation = ++loadGenerationRef.current
     if (!silent) setLoading(true)
     try {
       const [or, sr] = await Promise.all([
         fetch('/api/orders?limit=200').then((r) => r.json()),
         fetch('/api/accounts/summary').then((r) => r.json()),
       ])
+      if (loadGenerationRef.current !== generation) return // a newer load() call superseded this one
       if (or.success) setOrders(or.data)
       if (sr.success) setSummary(sr.data)
     } finally {
-      if (!silent) setLoading(false)
+      if (!silent && loadGenerationRef.current === generation) setLoading(false)
     }
   }, [])
 
   const loadDetail = useCallback(async (id: string) => {
+    latestOrderIdRef.current = id
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
+      if (latestOrderIdRef.current !== id) return // a newer selection superseded this one
       if (data.success) {
         setSelectedOrder(data.data.order)
         setLogs(data.data.logs)
       }
     } finally {
-      setDetailLoading(false)
+      if (latestOrderIdRef.current === id) setDetailLoading(false)
     }
   }, [])
 
@@ -71,6 +85,14 @@ export default function AccountsPage() {
   useEffect(() => {
     if (selectedId) loadDetail(selectedId)
   }, [selectedId, loadDetail])
+
+  // Keeps latestPreviewIdRef in sync with whichever order the preview modal
+  // is showing right now, regardless of which handler changed it, so
+  // refreshPreviewOrder's own stale-response guard always compares against
+  // the currently-intended order.
+  useEffect(() => {
+    latestPreviewIdRef.current = previewOrder?._id
+  }, [previewOrder])
 
   const handleSelect = (order: IOrder) => {
     setSelectedId(order._id)
@@ -85,6 +107,7 @@ export default function AccountsPage() {
   const refreshPreviewOrder = useCallback(async (id: string) => {
     const res = await fetch(`/api/orders/${id}`)
     const data = await res.json()
+    if (latestPreviewIdRef.current !== id) return // the preview switched to a different order since this was requested
     if (data.success) setPreviewOrder(data.data.order)
   }, [])
 

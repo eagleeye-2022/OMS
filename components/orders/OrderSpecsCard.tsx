@@ -1,6 +1,6 @@
 'use client'
 
-import { getDaysUntilDeadline } from '@/lib/utils'
+import { getLeadTimeLabel } from '@/lib/utils'
 import type { IOrder } from '@/types'
 
 interface OrderSpecsCardProps {
@@ -8,17 +8,12 @@ interface OrderSpecsCardProps {
 }
 
 export function OrderSpecsCard({ order }: OrderSpecsCardProps) {
-  const daysLeft = getDaysUntilDeadline(order.deliveryDate)
-  const leadTime = order.status === 'delivered' || order.status === 'cancelled'
-    ? '—'
-    : daysLeft >= 0 ? `${daysLeft} Days Remaining` : `${Math.abs(daysLeft)} Days Overdue`
-
   const rows: [string, string][] = [
     ['Product Category', order.category],
     ['Print Type', order.productType],
     ['Quantity', `${order.quantity.toLocaleString()} Units`],
     ['Size Breakdown', order.sizeBreakdown || '—'],
-    ['Lead Time', leadTime],
+    ['Lead Time', getLeadTimeLabel(order.deliveryDate, order.status)],
   ]
 
   return (

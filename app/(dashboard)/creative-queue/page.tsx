@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { CreativeHeader } from '@/components/creative/CreativeHeader'
 import { CreativeBoard } from '@/components/creative/CreativeBoard'
 import { CreativeDetailDrawer } from '@/components/creative/CreativeDetailDrawer'
@@ -20,30 +20,41 @@ export default function CreativeQueuePage() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
+  // Tracks the most recently *requested* list query / order id so an
+  // out-of-order network response can be detected and discarded instead of
+  // overwriting newer, correct data — same pattern as Clients/Orders/Accounts.
+  const latestListKeyRef = useRef('')
+  const latestOrderIdRef = useRef<string | undefined>(undefined)
+
   const loadBoard = useCallback(async (q = '', mine = false, silent = false) => {
+    const key = `${q}::${mine}`
+    latestListKeyRef.current = key
     if (!silent) setLoading(true)
     try {
       const params = new URLSearchParams({ search: q, relevantTo: 'creative', limit: '200' })
       if (mine) params.set('assignedToMe', 'true')
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
+      if (latestListKeyRef.current !== key) return
       if (data.success) {
         setOrders(data.data)
         setTotal(data.total)
       }
     } finally {
-      if (!silent) setLoading(false)
+      if (!silent && latestListKeyRef.current === key) setLoading(false)
     }
   }, [])
 
   const loadDetail = useCallback(async (id: string) => {
+    latestOrderIdRef.current = id
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
+      if (latestOrderIdRef.current !== id) return
       if (data.success) setSelectedOrder(data.data.order)
     } finally {
-      setDetailLoading(false)
+      if (latestOrderIdRef.current === id) setDetailLoading(false)
     }
   }, [])
 

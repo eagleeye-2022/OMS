@@ -89,6 +89,7 @@ export interface IClient {
   defaultPaymentTerms?: PaymentTerms
   customPaymentTerms?: string
   preferredPaymentMode?: PreferredPaymentMode
+  typicalOrderValue?: number
   invoiceRecipientName?: string
   invoiceEmail?: string
   deliveryDate?: string

@@ -27,6 +27,14 @@ export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS]
 
 export const CLOSED_ORDER_STATUSES: OrderStatus[] = ['delivered', 'cancelled']
 
+// Statuses reached before Creative has approved the design. The production
+// role must never be able to progress a production stage or complete
+// production while an order is still here — there's nothing approved to
+// produce yet. Client-safe (no model imports), so both the API route guard
+// (lib/order-status.ts re-exports this) and the Production UI (queue/detail)
+// can share the exact same definition of "not ready for production."
+export const PRE_DESIGN_APPROVAL_STATUSES: OrderStatus[] = ['pending', 'design_review']
+
 export const DESIGN_STATUS = {
   PENDING: 'pending',
   IN_PROGRESS: 'in_progress',
@@ -167,9 +175,15 @@ export const NOTIFICATION_TYPE = {
 //   Orders:         admin, sales only
 //   Creative Queue: admin, creative
 //   Production:     admin, production
-//   Shipping:       admin, sales, accounts — the 'shipping' role itself is
-//                   explicitly excluded (a deliberate business rule, not an
-//                   oversight; see ROLE_DEFAULT_REDIRECT note below)
+//   Shipping:       admin, sales, accounts, shipping — the 'shipping' role
+//                   gets view access to its own module (see CAN_VIEW_SHIPPING/
+//                   CAN_VIEW_CLIENT_DETAILS in lib/order-visibility.ts, which
+//                   must include it too or the module renders with courier/
+//                   tracking/delivery-address fields silently stripped).
+//                   Write actions (courier assignment, status transitions,
+//                   marking delivered) remain admin/sales/accounts-only —
+//                   that's a separate, deliberate business rule this role
+//                   change does not touch.
 //   Accounts:       admin, accounts
 //
 // Important: accounts does NOT get the generic Orders module/sidebar/page.
@@ -188,21 +202,20 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   sales: ['clients', 'orders', 'shipping', 'settings'],
   creative: ['creative-queue', 'settings'],
   production: ['production', 'settings'],
-  shipping: ['settings'],
+  shipping: ['shipping', 'settings'],
   accounts: ['accounts', 'shipping', 'settings'],
 }
 
-// The 'shipping' role has no module permissions of its own (see above). Its
-// default redirect used to point at '/' (the dashboard), back when the
-// dashboard had no role guard — now that the dashboard is admin-only, '/'
-// would immediately bounce it again. '/no-access' is a dedicated, guard-free
-// landing page for roles with zero assigned modules.
+// The 'shipping' role now lands on its own module (see ROLE_PERMISSIONS
+// above). '/no-access' remains a dedicated, guard-free landing page for any
+// role configured with zero assigned modules — none currently, but kept for
+// roles added in the future without a module wired up yet.
 export const ROLE_DEFAULT_REDIRECT: Record<Role, string> = {
   admin: '/',
   sales: '/clients',
   creative: '/creative-queue',
   production: '/production',
-  shipping: '/no-access',
+  shipping: '/shipping',
   accounts: '/accounts',
 }
 
@@ -238,6 +251,66 @@ export const NOTE_TYPE_ACCESS: Record<Role, NoteType[]> = {
   production: ['production'],
   shipping: [],
   accounts: ['accounts'],
+}
+
+// Coarse "what should Production do right now" state for a given order,
+// distinct from the generic ORDER_STATUS badge shown everywhere else in the
+// app — this exists specifically so the Production team can tell at a glance
+// whether to start, continue, or stop, without having to interpret a status
+// value that also carries Creative/Shipping-facing meaning.
+export const PRODUCTION_WORKFLOW_STATE = {
+  BLOCKED: 'blocked',
+  ON_HOLD: 'on_hold',
+  READY: 'ready',
+  IN_PROGRESS: 'in_progress',
+} as const
+
+export type ProductionWorkflowState = (typeof PRODUCTION_WORKFLOW_STATE)[keyof typeof PRODUCTION_WORKFLOW_STATE]
+
+export const PRODUCTION_WORKFLOW_STATE_LABEL: Record<ProductionWorkflowState, string> = {
+  blocked: 'Design Not Approved',
+  on_hold: 'On Hold',
+  ready: 'Ready to Start',
+  in_progress: 'In Progress',
+}
+
+export const PRODUCTION_WORKFLOW_STATE_COLOR: Record<ProductionWorkflowState, string> = {
+  blocked: 'bg-red-50 text-red-700',
+  on_hold: 'bg-amber-100 text-amber-700',
+  ready: 'bg-blue-100 text-blue-700',
+  in_progress: 'bg-indigo-100 text-indigo-700',
+}
+
+/**
+ * Derives the Production-facing workflow state from the order's real status
+ * field — no new data, just a stricter lens on the existing OrderStatus enum.
+ * 'shipping_ready' and beyond aren't handled here since those orders have
+ * already left the Production queue (relevantTo=production excludes them).
+ */
+export function getProductionWorkflowState(status: OrderStatus): ProductionWorkflowState {
+  if (PRE_DESIGN_APPROVAL_STATUSES.includes(status)) return 'blocked'
+  if (status === 'delayed') return 'on_hold'
+  if (status === 'design_approved') return 'ready'
+  return 'in_progress'
+}
+
+/**
+ * If the production role should not be able to progress this order right
+ * now, returns why; otherwise null. Shared by the stage/productionStage/
+ * production-complete write guards (app/api/orders/[id]/route.ts and
+ * production-complete/route.ts) and the Production UI (ProductionDetailPage),
+ * so the UI never offers an action the API would reject. Admin is never
+ * blocked by this — callers gate on role themselves (`role === 'production'`)
+ * before consulting it, consistent with every other role-gated intent here.
+ */
+export function getProductionBlockReason(status: OrderStatus): string | null {
+  if (PRE_DESIGN_APPROVAL_STATUSES.includes(status)) {
+    return "This order's design hasn't been approved yet — production actions are disabled until Creative approves it."
+  }
+  if (status === 'delayed') {
+    return 'This order is on hold and cannot be progressed until the hold is resolved.'
+  }
+  return null
 }
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {

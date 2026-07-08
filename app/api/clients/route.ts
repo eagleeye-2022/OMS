@@ -44,25 +44,38 @@ export async function GET(req: NextRequest) {
       ]
     }
 
+    // Sentinel used so clients with no active orders sort after every client
+    // that has a real upcoming/overdue deadline (MongoDB sorts null/missing
+    // BEFORE dates in ascending order, which is the opposite of what we want).
+    const NO_DEADLINE_SENTINEL = new Date(8640000000000000)
+
     const [clients, total] = await Promise.all([
       Client.aggregate([
         { $match: query },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
-        { $limit: limit },
+        // The lookup now has to run before pagination (not after, as before)
+        // since sorting depends on each client's linked active orders — the
+        // nearest deadline among them, not creation time.
         {
           $lookup: {
             from: 'orders',
             let: { clientId: '$_id' },
             pipeline: [
               { $match: { $expr: { $eq: ['$client', '$$clientId'] }, status: { $nin: CLOSED_ORDER_STATUSES } } },
-              { $count: 'count' },
+              { $project: { deliveryDate: 1 } },
             ],
             as: 'activeOrdersAgg',
           },
         },
-        { $addFields: { activeOrders: { $ifNull: [{ $arrayElemAt: ['$activeOrdersAgg.count', 0] }, 0] } } },
-        { $project: { activeOrdersAgg: 0 } },
+        {
+          $addFields: {
+            activeOrders: { $size: '$activeOrdersAgg' },
+            nearestDeadline: { $ifNull: [{ $min: '$activeOrdersAgg.deliveryDate' }, NO_DEADLINE_SENTINEL] },
+          },
+        },
+        { $sort: { nearestDeadline: 1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { activeOrdersAgg: 0, nearestDeadline: 0 } },
       ]),
       Client.countDocuments(query),
     ])

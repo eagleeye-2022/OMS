@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ShippingHeader } from '@/components/shipping/ShippingHeader'
 import { ShippingSummaryCards } from '@/components/shipping/ShippingSummaryCards'
 import { ShippingQueueTable } from '@/components/shipping/ShippingQueueTable'
@@ -24,32 +24,42 @@ export default function ShippingPage() {
   const isAdmin = user?.role === 'admin'
   const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounts'
 
+  // Tracks the most recently *requested* list query / order id so an
+  // out-of-order network response can be detected and discarded instead of
+  // overwriting newer, correct data — same pattern as Clients/Orders/Accounts.
+  const latestSearchRef = useRef('')
+  const latestOrderIdRef = useRef<string | undefined>(undefined)
+
   const loadQueue = useCallback(async (q = '', silent = false) => {
+    latestSearchRef.current = q
     if (!silent) setLoading(true)
     try {
       const params = new URLSearchParams({ search: q, relevantTo: 'shipping', limit: '200' })
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
+      if (latestSearchRef.current !== q) return
       if (data.success) {
         setOrders(data.data)
         setTotal(data.total)
       }
     } finally {
-      if (!silent) setLoading(false)
+      if (!silent && latestSearchRef.current === q) setLoading(false)
     }
   }, [])
 
   const loadDetail = useCallback(async (id: string) => {
+    latestOrderIdRef.current = id
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
+      if (latestOrderIdRef.current !== id) return
       if (data.success) {
         setSelectedOrder(data.data.order)
         setLogs(data.data.logs)
       }
     } finally {
-      setDetailLoading(false)
+      if (latestOrderIdRef.current === id) setDetailLoading(false)
     }
   }, [])
 

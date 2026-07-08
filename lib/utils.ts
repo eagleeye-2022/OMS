@@ -56,6 +56,12 @@ export function getDaysUntilDeadline(deliveryDate: string | Date): number {
   return Math.ceil(diff / (1000 * 60 * 60 * 24))
 }
 
+export function getLeadTimeLabel(deliveryDate: string | Date, status: string): string {
+  if (status === 'delivered' || status === 'cancelled') return '—'
+  const daysLeft = getDaysUntilDeadline(deliveryDate)
+  return daysLeft >= 0 ? `${daysLeft} Days Remaining` : `${Math.abs(daysLeft)} Days Overdue`
+}
+
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ')
 }

@@ -66,6 +66,28 @@ export function StepBillingDetails() {
       </div>
 
       <div>
+        <label className="text-sm font-medium text-gray-700">Typical Order Value</label>
+        <div className="relative mt-1">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="e.g. 25000"
+            className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            {...register('typicalOrderValue')}
+          />
+        </div>
+        {errors.typicalOrderValue ? (
+          <p className="text-xs text-red-600 mt-1">{errors.typicalOrderValue.message}</p>
+        ) : (
+          <p className="text-xs text-gray-500 mt-1">
+            A sales-reference estimate of this client&apos;s typical order size — not an actual order total. Orders are created and priced in the Orders module.
+          </p>
+        )}
+      </div>
+
+      <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-2">Invoicing Preferences</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Invoice Recipient Name *" error={errors.invoiceRecipientName?.message} {...register('invoiceRecipientName')} />

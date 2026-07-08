@@ -101,6 +101,44 @@ export function ClientDetailPanel({ client, orders, loading, canEdit, canDeactiv
         </div>
       </div>
 
+      {client.typicalOrderValue != null && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Billing Details</h3>
+          <p className="text-xs text-gray-400 mb-3">
+            A sales-reference estimate, not an actual order total — orders are created and priced in the Orders module.
+          </p>
+          <div>
+            <p className="text-xs text-gray-400">Typical Order Value</p>
+            <p className="text-lg font-semibold text-gray-900">{formatCurrency(client.typicalOrderValue)}</p>
+          </div>
+        </div>
+      )}
+
+      {(client.productPreferences?.length > 0 || client.deliveryDate) && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-sm font-semibold text-gray-900">Order Preferences</h3>
+            {client.deliveryDate && (
+              <span className="text-xs text-gray-500">Expected by {formatDate(client.deliveryDate)}</span>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 mb-4">
+            Captured during onboarding for sales reference — not a placed order. Use &quot;Create Order&quot; in the Orders tab to start a real one.
+          </p>
+          <div className="space-y-3">
+            {client.productPreferences.map((p, i) => (
+              <div key={i} className="flex items-start justify-between gap-4 text-sm border-b border-gray-100 last:border-0 pb-3 last:pb-0">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900">{p.preferredProductCategory || '—'}</p>
+                  {p.orderNote && <p className="text-xs text-gray-500 mt-0.5">{p.orderNote}</p>}
+                </div>
+                <p className="text-gray-700 shrink-0">{p.orderQuantity ? `${p.orderQuantity.toLocaleString()} units` : '—'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-gray-900">Order History</h3>

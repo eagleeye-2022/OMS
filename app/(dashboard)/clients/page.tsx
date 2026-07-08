@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SearchBar } from '@/components/ui/SearchBar'
@@ -28,31 +28,42 @@ export default function ClientsPage() {
   const canEdit = user ? ['admin', 'sales'].includes(user.role) : false
   const canDeactivate = user?.role === 'admin'
 
+  // Tracks the most recently *requested* search/client id so an
+  // out-of-order network response (e.g. a slower request for a client
+  // clicked earlier arriving after a faster request for one clicked later)
+  // can be detected and discarded instead of overwriting newer, correct data.
+  const latestSearchRef = useRef('')
+  const latestClientIdRef = useRef<string | undefined>(undefined)
+
   const loadList = useCallback(async (q = '') => {
+    latestSearchRef.current = q
     setListLoading(true)
     try {
       const res = await fetch(`/api/clients?search=${encodeURIComponent(q)}&limit=50`)
       const data = await res.json()
+      if (latestSearchRef.current !== q) return // a newer search superseded this one
       if (data.success) {
         setClients(data.data)
         setTotal(data.total)
       }
     } finally {
-      setListLoading(false)
+      if (latestSearchRef.current === q) setListLoading(false)
     }
   }, [])
 
   const loadDetail = useCallback(async (id: string) => {
+    latestClientIdRef.current = id
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/clients/${id}`)
       const data = await res.json()
+      if (latestClientIdRef.current !== id) return // a newer selection superseded this one
       if (data.success) {
         setSelectedClient(data.data.client)
         setOrders(data.data.orders)
       }
     } finally {
-      setDetailLoading(false)
+      if (latestClientIdRef.current === id) setDetailLoading(false)
     }
   }, [])
 

@@ -14,7 +14,7 @@ const SHIPPING_FIELDS = [
   'shipmentWeight', 'packageCount', 'deliveredAt', 'deliveredBy', 'delayReason',
 ] as const
 
-export const CAN_VIEW_SHIPPING: Role[] = ['admin', 'sales', 'accounts']
+export const CAN_VIEW_SHIPPING: Role[] = ['admin', 'sales', 'accounts', 'shipping']
 
 // Mongoose populate() projection for the order's embedded client — used by
 // every order-detail route (GET/PUT /api/orders/[id], mark-delivered,
@@ -37,7 +37,9 @@ const CLIENT_DETAIL_FIELDS = [
   'sameAsBilling', 'gstNumber', 'invoiceRecipientName', 'invoiceEmail',
 ] as const
 
-export const CAN_VIEW_CLIENT_DETAILS: Role[] = ['admin', 'sales', 'accounts']
+// Includes 'shipping' — the delivery address lives on the embedded client
+// object, and a shipping operator needs it to actually ship anything.
+export const CAN_VIEW_CLIENT_DETAILS: Role[] = ['admin', 'sales', 'accounts', 'shipping']
 
 /**
  * Filters an order's notes array down to only the domains a role may see.
@@ -57,9 +59,8 @@ export function canWriteNoteType(role: Role, noteType: NoteType): boolean {
 /**
  * Strips finance and shipping/courier fields from an order object entirely
  * (delete, not null-out) based on the viewing role, so restricted roles
- * (Creative/Production, and the 'shipping' role itself under the final
- * access matrix) never see pricing/payment or dispatch/delivery data in the
- * JSON response, not just in the UI. Also filters the embedded notes array
+ * (Creative/Production) never see pricing/payment or dispatch/delivery data
+ * in the JSON response, not just in the UI. Also filters the embedded notes array
  * down to the domains the role may see, since notes travel with the order
  * document on every one of these responses. Replaces the narrower
  * stripFinanceFields — every call site now gets shipping-field and

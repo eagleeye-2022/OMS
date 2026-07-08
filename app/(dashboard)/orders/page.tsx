@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
@@ -31,32 +31,44 @@ export default function OrdersPage() {
 
   const canCreate = user ? ['admin', 'sales'].includes(user.role) : false
 
+  // Tracks the most recently *requested* list query / order id so an
+  // out-of-order network response (e.g. a slower request for a search typed
+  // earlier, or an order clicked earlier, arriving after a faster/newer one)
+  // can be detected and discarded instead of overwriting newer, correct data.
+  const latestListKeyRef = useRef('')
+  const latestOrderIdRef = useRef<string | undefined>(undefined)
+
   const loadList = useCallback(async (q = '', st = '', silent = false) => {
+    const key = `${q}::${st}`
+    latestListKeyRef.current = key
     if (!silent) setListLoading(true)
     try {
       const params = new URLSearchParams({ search: q, stage: st, limit: '50' })
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
+      if (latestListKeyRef.current !== key) return // a newer search/filter superseded this one
       if (data.success) {
         setOrders(data.data)
         setTotal(data.total)
       }
     } finally {
-      if (!silent) setListLoading(false)
+      if (!silent && latestListKeyRef.current === key) setListLoading(false)
     }
   }, [])
 
   const loadDetail = useCallback(async (id: string) => {
+    latestOrderIdRef.current = id
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
+      if (latestOrderIdRef.current !== id) return // a newer selection superseded this one
       if (data.success) {
         setSelectedOrder(data.data.order)
         setLogs(data.data.logs)
       }
     } finally {
-      setDetailLoading(false)
+      if (latestOrderIdRef.current === id) setDetailLoading(false)
     }
   }, [])
 

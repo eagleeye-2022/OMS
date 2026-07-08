@@ -51,9 +51,12 @@ export async function GET(req: NextRequest) {
       query.status = { $in: ['pending', 'design_review', 'design_approved'] }
     }
     // Orders ready for or currently in production: design approved through
-    // QC, not yet handed to shipping. Used by the Production queue.
+    // QC, not yet handed to shipping. Used by the Production queue. Includes
+    // 'delayed' (on hold) — an order paused mid-production must stay visible
+    // to Production with a clear "On Hold" state, not silently disappear
+    // from the queue (mirrors Shipping's relevantTo filter below).
     if (relevantTo === 'production') {
-      query.status = { $in: ['design_approved', 'in_production', 'quality_check'] }
+      query.status = { $in: ['design_approved', 'in_production', 'quality_check', 'delayed'] }
     }
     // Orders handed off to Shipping through terminal delivery. 'delivered' is
     // included (rather than excluded like Creative/Production's completed
@@ -82,7 +85,11 @@ export async function GET(req: NextRequest) {
 
     const [orders, total] = await Promise.all([
       Order.find(query)
-        .sort({ createdAt: -1 })
+        // Nearest deadline first (deliveryDate is a required field, so there's
+        // no "no deadline" case here) — overdue orders naturally sort first
+        // too, since their date is further in the past. orderNumber is a
+        // stable, unique tiebreaker for orders sharing the same deliveryDate.
+        .sort({ deliveryDate: 1, orderNumber: 1 })
         .skip(skip)
         .limit(limit)
         .populate('client', 'companyName')
