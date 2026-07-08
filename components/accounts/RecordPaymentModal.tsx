@@ -21,7 +21,9 @@ export function RecordPaymentModal({ open, onClose, onSaved }: RecordPaymentModa
 
   useEffect(() => {
     if (!open) return
-    fetch('/api/orders?limit=200').then((r) => r.json()).then((d) => {
+    // excludeCancelled: a cancelled order is a dead deal — it must not be
+    // selectable here, or a real Payment record could get created against it.
+    fetch('/api/orders?limit=200&excludeCancelled=true').then((r) => r.json()).then((d) => {
       if (d.success) setOrders(d.data.filter((o: IOrder) => (o.balanceDue ?? 0) > 0))
     })
   }, [open])

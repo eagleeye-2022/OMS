@@ -14,12 +14,17 @@ import type { OrderStatus } from '@/lib/constants'
 interface DashboardData {
   stats: {
     totalOrders: number
+    totalOrdersDelta: number
     activeOrders: number
+    activeOrdersDelta: number
     pendingApproval: number
+    pendingApprovalDelta: number
     delayed: number
+    delayedDelta: number
     revenue: number
+    revenueDelta: number
     outstanding: number
-    newThisMonth: number
+    outstandingDelta: number
   }
   pipeline: Record<string, number>
   stageCounts: Record<string, number>
@@ -73,6 +78,21 @@ const STAGE_LABELS: Record<string, string> = {
   quality_check: 'Quality Check',
 }
 
+/** Renders a KPI's (current - previous period) delta as a small pill — hidden when there's no real change. */
+function DeltaBadge({ delta, currency }: { delta: number; currency?: boolean }) {
+  if (delta === 0) return null
+  const positive = delta > 0
+  const magnitude = currency ? formatCurrency(Math.abs(delta)) : Math.abs(delta)
+  return (
+    <span className={cn(
+      'text-xs px-2 py-0.5 rounded font-medium',
+      positive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+    )}>
+      {positive ? '+' : '-'}{magnitude}
+    </span>
+  )
+}
+
 export function DashboardView() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,14 +129,18 @@ export function DashboardView() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard label="Total Orders" value={stats.totalOrders} sub="This month"
-          badge={stats.newThisMonth > 0 ? <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-medium">+{stats.newThisMonth}</span> : undefined} />
-        <StatCard label="Active Orders" value={stats.activeOrders} sub="Currently in workflow" accent="text-blue-600" />
-        <StatCard label="Pending Approval" value={stats.pendingApproval} sub="Awaiting action" accent="text-amber-600" />
-        <StatCard label="Delayed" value={stats.delayed} sub="From last week" accent="text-red-600"
-          badge={stats.delayed > 0 ? <span className="text-xs text-red-400">+{stats.delayed}</span> : undefined} />
-        <StatCard label="Revenue" value={formatCurrency(stats.revenue)} sub="+12% vs May" accent="text-green-600" />
-        <StatCard label="Outstanding" value={formatCurrency(stats.outstanding)} sub={`${stats.delayed + stats.pendingApproval} orders pending`} accent="text-purple-600" />
+        <StatCard label="Total Orders" value={stats.totalOrders} sub="This month vs last month"
+          badge={<DeltaBadge delta={stats.totalOrdersDelta} />} />
+        <StatCard label="Active Orders" value={stats.activeOrders} sub="Currently in workflow" accent="text-blue-600"
+          badge={<DeltaBadge delta={stats.activeOrdersDelta} />} />
+        <StatCard label="Pending Approval" value={stats.pendingApproval} sub="Awaiting action" accent="text-amber-600"
+          badge={<DeltaBadge delta={stats.pendingApprovalDelta} />} />
+        <StatCard label="Delayed" value={stats.delayed} sub="Currently delayed" accent="text-red-600"
+          badge={<DeltaBadge delta={stats.delayedDelta} />} />
+        <StatCard label="Revenue" value={formatCurrency(stats.revenue)} sub="Collected this month" accent="text-green-600"
+          badge={<DeltaBadge delta={stats.revenueDelta} currency />} />
+        <StatCard label="Outstanding" value={formatCurrency(stats.outstanding)} sub={`${stats.delayed + stats.pendingApproval} orders pending`} accent="text-purple-600"
+          badge={<DeltaBadge delta={stats.outstandingDelta} currency />} />
       </div>
 
       {/* Middle Row */}

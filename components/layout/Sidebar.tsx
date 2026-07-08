@@ -23,8 +23,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Orders', href: '/orders', icon: <ShoppingBag size={16} />, module: 'orders' },
   { label: 'Creative Team', href: '/creative-queue', icon: <Palette size={16} />, module: 'creative-queue' },
   { label: 'Production', href: '/production', icon: <Factory size={16} />, module: 'production' },
-  { label: 'Shipping', href: '/shipping', icon: <Truck size={16} />, module: 'shipping' },
   { label: 'Accounts', href: '/accounts', icon: <Calculator size={16} />, module: 'accounts' },
+  { label: 'Shipping', href: '/shipping', icon: <Truck size={16} />, module: 'shipping' },
 ]
 
 const SUPPORT_ITEMS: NavItem[] = [

@@ -54,7 +54,11 @@ export default function AccountsPage() {
     if (!silent) setLoading(true)
     try {
       const [or, sr] = await Promise.all([
-        fetch('/api/orders?limit=200').then((r) => r.json()),
+        // excludeCancelled: Due Payments / All Invoices are active-receivables
+        // tables, not a cancellation history — matches the same rule already
+        // applied by /api/accounts/summary so the KPI cards and these tables
+        // can never disagree about which orders are "real" outstanding money.
+        fetch('/api/orders?limit=200&excludeCancelled=true').then((r) => r.json()),
         fetch('/api/accounts/summary').then((r) => r.json()),
       ])
       if (loadGenerationRef.current !== generation) return // a newer load() call superseded this one

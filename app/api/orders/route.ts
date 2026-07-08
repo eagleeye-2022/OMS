@@ -34,6 +34,15 @@ export async function GET(req: NextRequest) {
     const stage = searchParams.get('stage') || ''
     const relevantTo = searchParams.get('relevantTo') || ''
     const assignedToMe = searchParams.get('assignedToMe') === 'true'
+    // Excludes cancelled orders from the result set — the query-layer
+    // equivalent of the same `status: { $ne: 'cancelled' }` rule already
+    // used by app/api/accounts/summary/route.ts, so any list consumer that
+    // shouldn't show phantom receivables/invoices for a dead deal (Accounts'
+    // Due Payments / All Invoices / Record Payment order-picker) can opt in
+    // here instead of each re-implementing (or forgetting) its own filter.
+    // Deliberately narrower than CLOSED_ORDER_STATUSES — a delivered order
+    // with a real unpaid balance is still a legitimate receivable.
+    const excludeCancelled = searchParams.get('excludeCancelled') === 'true'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
@@ -41,6 +50,7 @@ export async function GET(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const query: Record<string, any> = {}
     if (status) query.status = status
+    if (excludeCancelled) query.status = { $ne: 'cancelled' }
     if (stage && stage in ORDER_STAGE_STATUSES) {
       query.status = { $in: ORDER_STAGE_STATUSES[stage as keyof typeof ORDER_STAGE_STATUSES] }
     }

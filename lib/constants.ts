@@ -198,7 +198,7 @@ export const NOTIFICATION_TYPE = {
 // profile/password page (see app/(dashboard)/settings/), so it's appended to
 // every list below rather than gating it like the operational modules above.
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
-  admin: ['dashboard', 'clients', 'orders', 'creative-queue', 'production', 'shipping', 'accounts', 'user-roles', 'settings'],
+  admin: ['dashboard', 'clients', 'orders', 'creative-queue', 'production', 'accounts', 'shipping', 'user-roles', 'settings'],
   sales: ['clients', 'orders', 'shipping', 'settings'],
   creative: ['creative-queue', 'settings'],
   production: ['production', 'settings'],
