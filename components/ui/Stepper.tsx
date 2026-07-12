@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { cn } from '@/lib/utils'
 
 interface Step {
@@ -8,14 +9,16 @@ interface Step {
 
 interface StepperProps {
   steps: Step[]
+  /** Stretches the row to the full width of its container, growing the connector segments between steps instead of leaving them a fixed size. Off by default so existing centered/compact usages (e.g. the client wizard header) are unaffected. */
+  fill?: boolean
 }
 
-export function Stepper({ steps }: StepperProps) {
+export function Stepper({ steps, fill = false }: StepperProps) {
   return (
-    <div className="flex items-center gap-0">
+    <div className={cn('flex items-center', fill && 'w-full')}>
       {steps.map((step, i) => (
-        <div key={i} className="flex items-center">
-          <div className="flex flex-col items-center">
+        <Fragment key={i}>
+          <div className="flex flex-col items-center shrink-0">
             <div
               className={cn(
                 'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors',
@@ -39,9 +42,9 @@ export function Stepper({ steps }: StepperProps) {
             </span>
           </div>
           {i < steps.length - 1 && (
-            <div className={cn('h-0.5 w-8 mb-4 mx-1', step.done ? 'bg-blue-600' : 'bg-gray-200')} />
+            <div className={cn('h-0.5 mb-4 mx-1', fill ? 'flex-1' : 'w-8', step.done ? 'bg-blue-600' : 'bg-gray-200')} />
           )}
-        </div>
+        </Fragment>
       ))}
     </div>
   )

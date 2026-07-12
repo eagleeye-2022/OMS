@@ -62,7 +62,6 @@ export function StepBillingDetails() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Select label="Preferred Payment Mode" options={PAYMENT_MODE_OPTIONS} error={errors.preferredPaymentMode?.message} {...register('preferredPaymentMode')} />
-        <Input label="Alternate Phone" placeholder="Optional" error={errors.alternatePhone?.message} {...register('alternatePhone')} />
       </div>
 
       <div>

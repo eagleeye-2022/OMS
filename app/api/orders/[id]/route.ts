@@ -13,7 +13,7 @@ import {
   updateShippingDetailsSchema,
 } from '@/validations/order.schema'
 import { applyDirectStatusUpdate } from '@/lib/order-status'
-import { getProductionBlockReason } from '@/lib/constants'
+import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES } from '@/lib/constants'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS } from '@/lib/order-visibility'
 import { PRODUCTION_STAGE_KEY_LABEL, type ProductionStage } from '@/lib/constants'
 
@@ -100,8 +100,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         existing.revisionHistory.push({ note: parsed.data.revisionNote, by: session.name, at: new Date() })
       }
 
-      // Server-side auto-advance: client_approved while in design_review → design_approved
-      if (parsed.data.designStatus === 'client_approved' && existing.status === 'design_review') {
+      // Server-side auto-advance: client_approved while the order hasn't left
+      // the pre-approval zone yet → design_approved. Reuses the same
+      // PRE_DESIGN_APPROVAL_STATUSES Production's gate is built on (rather
+      // than checking for 'design_review' alone) because in practice no UI
+      // path ever moves an order's status to 'design_review' before Creative
+      // approves it — orders sit at 'pending' the whole time Creative works
+      // them. Gating on 'design_review' only meant this auto-advance never
+      // fired for real orders, leaving them stuck at status='pending' with
+      // designStatus='client_approved': invisible to Production's queue
+      // filter (which excludes 'pending') despite showing as "Approved" in
+      // Creative's board (which groups by designStatus, not status).
+      if (parsed.data.designStatus === 'client_approved' && PRE_DESIGN_APPROVAL_STATUSES.includes(existing.status)) {
         existing.status = 'design_approved'
       }
 

@@ -92,7 +92,7 @@ export async function GET() {
         .sort({ createdAt: -1 })
         .limit(6)
         .populate('client', 'companyName')
-        .select('orderNumber status productType quantity deliveryDate totalAmount advancePaid balanceDue paymentStatus')
+        .select('orderNumber status category quantity deliveryDate totalAmount advancePaid balanceDue paymentStatus')
         .lean(),
       Order.find({
         status: { $nin: ['delivered', 'cancelled'] },

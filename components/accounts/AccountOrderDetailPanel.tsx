@@ -13,7 +13,7 @@ import { AccountInvoiceFileCard } from './AccountInvoiceFileCard'
 import { AccountNotesCard } from './AccountNotesCard'
 import { PaymentReceiptModal } from './PaymentReceiptModal'
 import { isOrderOverdue } from './types'
-import { CLIENT_STATUS_LABEL, CLIENT_STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR } from '@/lib/constants'
+import { CLIENT_STATUS_LABEL, CLIENT_STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR, ORDER_STATUS_LABEL, ORDER_STATUS_COLOR, getShippingBlockReason } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
 import type { IActivityLog, IClient, IOrder, IPayment } from '@/types'
 
@@ -36,6 +36,7 @@ export function AccountOrderDetailPanel({ order, logs, loading, onUpdated, onClo
 
   const client = order.client as IClient
   const overdue = isOrderOverdue(order)
+  const shippingBlockReason = getShippingBlockReason(order.status)
 
   return (
     <div className="space-y-5">
@@ -43,9 +44,13 @@ export function AccountOrderDetailPanel({ order, logs, loading, onUpdated, onClo
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-gray-900">{order.orderNumber}</h2>
+            <Badge label={ORDER_STATUS_LABEL[order.status]} className={ORDER_STATUS_COLOR[order.status]} />
             {overdue && <Badge label="Overdue" className="bg-red-100 text-red-700" />}
           </div>
           {order.invoice?.invoiceNumber && <p className="text-sm text-gray-500">{order.invoice.invoiceNumber}</p>}
+          {shippingBlockReason && (
+            <p className="text-xs text-gray-500 mt-1">Not yet in Shipping — {shippingBlockReason}</p>
+          )}
         </div>
         {onClose && (
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 shrink-0"><X size={18} /></button>

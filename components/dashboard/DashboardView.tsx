@@ -33,7 +33,7 @@ interface DashboardData {
     _id: string
     orderNumber: string
     client: { companyName: string }
-    productType: string
+    category: string
     quantity: number
     status: string
     deliveryDate: string
@@ -370,7 +370,7 @@ export function DashboardView() {
                 )
               }
             },
-            { key: 'productType', header: 'Product', render: (row) => <span className="text-xs">{row.productType as string}</span> },
+            { key: 'category', header: 'Product', render: (row) => <span className="text-xs">{row.category as string}</span> },
             { key: 'quantity', header: 'Qty', render: (row) => <span className="text-xs">{(row.quantity as number).toLocaleString()}</span> },
             {
               key: 'status', header: 'Stage', render: (row) => (

@@ -158,7 +158,7 @@ export function ClientDetailPanel({ client, orders, loading, canEdit, canDeactiv
                 </a>
               )
             },
-            { key: 'productType', header: 'Product', render: row => <span className="text-sm">{row.productType as string}</span> },
+            { key: 'category', header: 'Product', render: row => <span className="text-sm">{row.category as string}</span> },
             { key: 'quantity', header: 'Qty', render: row => <span className="text-sm">{(row.quantity as number).toLocaleString()}</span> },
             { key: 'createdAt', header: 'Order Date', render: row => <span className="text-sm text-gray-500">{formatDate(row.createdAt as string)}</span> },
             { key: 'totalAmount', header: 'Value', render: row => <span className="text-sm font-medium">{formatCurrency(row.totalAmount as number)}</span> },

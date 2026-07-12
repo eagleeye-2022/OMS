@@ -6,7 +6,7 @@ import Client from '@/models/Client'
 import ActivityLog from '@/models/ActivityLog'
 import { orderSchema } from '@/validations/order.schema'
 import { stripSensitiveOrderFields } from '@/lib/order-visibility'
-import { ORDER_STAGE_STATUSES } from '@/lib/constants'
+import { ORDER_STAGE_STATUSES, SHIPPING_RELEVANT_STATUSES } from '@/lib/constants'
 
 function mongoError(err: unknown): NextResponse | null {
   const e = err as { code?: number; name?: string; message?: string }
@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
     // included (rather than excluded like Creative/Production's completed
     // state) so the Shipping queue's "Delivered" summary card has data.
     if (relevantTo === 'shipping') {
-      query.status = { $in: ['shipping_ready', 'dispatched', 'in_transit', 'delayed', 'delivered'] }
+      query.status = { $in: SHIPPING_RELEVANT_STATUSES }
     }
     if (assignedToMe) {
       if (session.role === 'production') {

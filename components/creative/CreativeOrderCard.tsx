@@ -41,21 +41,18 @@ export function CreativeOrderCard({ order, selected, onClick }: CreativeOrderCar
       <p className="text-sm font-semibold text-gray-800 truncate">{client?.companyName || '—'}</p>
       <p className="text-xs text-gray-500 truncate">{order.productType} · {order.quantity.toLocaleString()} pcs</p>
 
-      <div className="flex items-center justify-between mt-2.5">
+      <div className="flex items-center justify-between mt-2.5 gap-2">
         <Badge label={DESIGN_STATUS_LABEL[order.designStatus]} className={DESIGN_STATUS_COLOR[order.designStatus]} />
-        {!isDone && (
-          <span className={cn('flex items-center gap-1 text-xs font-medium', daysLeft < 0 ? 'text-red-600' : daysLeft <= 2 ? 'text-amber-600' : 'text-green-600')}>
-            {daysLeft < 0 ? <AlertTriangle size={11} /> : <Clock size={11} />}
-            {daysLeft < 0 ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days left`}
-          </span>
-        )}
-      </div>
-
-      {assigneeName && (
-        <div className="flex justify-end mt-2">
-          <Avatar name={assigneeName} size="sm" />
+        <div className="flex items-center gap-2">
+          {!isDone && (
+            <span className={cn('flex items-center gap-1 text-xs font-medium', daysLeft < 0 ? 'text-red-600' : daysLeft <= 2 ? 'text-amber-600' : 'text-green-600')}>
+              {daysLeft < 0 ? <AlertTriangle size={11} /> : <Clock size={11} />}
+              {daysLeft < 0 ? `${Math.abs(daysLeft)} days overdue` : `${daysLeft} days left`}
+            </span>
+          )}
+          {assigneeName && <Avatar name={assigneeName} size="sm" />}
         </div>
-      )}
+      </div>
     </button>
   )
 }

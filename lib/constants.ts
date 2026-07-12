@@ -313,6 +313,34 @@ export function getProductionBlockReason(status: OrderStatus): string | null {
   return null
 }
 
+/**
+ * Orders handed off to Shipping through terminal delivery — the exact set
+ * relevantTo=shipping queries for (app/api/orders/route.ts). Extracted here,
+ * rather than left as an inline array in the route, so any other module that
+ * needs to explain "why isn't this order in Shipping yet" (see
+ * getShippingBlockReason below) can't silently drift from what the Shipping
+ * queue itself actually displays.
+ */
+export const SHIPPING_RELEVANT_STATUSES: OrderStatus[] = ['shipping_ready', 'dispatched', 'in_transit', 'delayed', 'delivered']
+
+/**
+ * Human-readable reason an order hasn't reached the Shipping queue yet, or
+ * null once it has. Shipping eligibility is driven purely by production
+ * completion — status reaching 'shipping_ready' via the explicit "Mark
+ * Production Complete" action in Production — and has no relationship to
+ * payment/invoice state. Orders can be fully paid (even 100% advance) long
+ * before production starts, which is normal, not a bug. This exists so
+ * modules outside Shipping (e.g. Accounts, where a fully-paid order can look
+ * "done" from a finance point of view) can surface *why* the order hasn't
+ * reached Shipping, instead of it just silently not appearing there.
+ */
+export function getShippingBlockReason(status: OrderStatus): string | null {
+  if (SHIPPING_RELEVANT_STATUSES.includes(status)) return null
+  if (status === 'cancelled') return 'This order was cancelled and will not ship.'
+  if (PRE_DESIGN_APPROVAL_STATUSES.includes(status)) return "Design hasn't been approved yet, so production hasn't started."
+  return 'Production is still in progress — this order will move to Shipping once production is marked complete.'
+}
+
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   pending: 'Pending',
   design_review: 'Design Review',

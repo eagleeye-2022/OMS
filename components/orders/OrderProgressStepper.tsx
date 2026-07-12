@@ -42,7 +42,7 @@ export function OrderProgressStepper({ status }: OrderProgressStepperProps) {
 
   return (
     <div className="overflow-x-auto pb-1">
-      <Stepper steps={steps} />
+      <Stepper steps={steps} fill />
     </div>
   )
 }

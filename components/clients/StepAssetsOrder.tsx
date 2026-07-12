@@ -103,8 +103,6 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
           Add other product
         </label>
       </div>
-
-      <Textarea label="Notes" placeholder="Optional" error={errors.notes?.message} {...register('notes')} />
     </div>
   )
 }
