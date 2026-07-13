@@ -35,7 +35,7 @@ export function StepBasicInfo() {
             <Input label="Phone Number *" placeholder="+91 00000 00000" error={errors.phone?.message} {...register('phone')} />
             <Input label="Alternate Phone" placeholder="Optional" error={errors.alternatePhone?.message} {...register('alternatePhone')} />
           </div>
-          <Input label="Email Address *" type="email" placeholder="client@example.com" error={errors.email?.message} {...register('email')} />
+          <Input label="Email Address" type="email" placeholder="Optional" error={errors.email?.message} {...register('email')} />
         </div>
       </div>
 

@@ -65,7 +65,7 @@ export function StepBillingDetails() {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-gray-700">Typical Order Value</label>
+        <label className="text-sm font-medium text-gray-700">Typical Order Value *</label>
         <div className="relative mt-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
           <input

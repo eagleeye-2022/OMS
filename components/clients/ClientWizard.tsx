@@ -30,7 +30,8 @@ interface ClientWizardProps {
   open: boolean
   initialClient?: IClient | null
   onClose: () => void
-  onSaved: () => void
+  /** Receives the actual saved client (with its real `_id`) so callers can act on the exact record just created/updated, instead of re-fetching and guessing which one it was. */
+  onSaved: (client: IClient) => void
 }
 
 export function ClientWizard({ open, initialClient, onClose, onSaved }: ClientWizardProps) {
@@ -39,7 +40,7 @@ export function ClientWizard({ open, initialClient, onClose, onSaved }: ClientWi
   const [saving, setSaving] = useState(false)
   const [bannerError, setBannerError] = useState('')
   const [successOpen, setSuccessOpen] = useState(false)
-  const [savedName, setSavedName] = useState('')
+  const [savedClient, setSavedClient] = useState<IClient | null>(null)
 
   const form = useForm<ClientFormValues>({
     defaultValues: initialClient ? mapClientToFormValues(initialClient) : emptyClientFormValues(),
@@ -88,7 +89,7 @@ export function ClientWizard({ open, initialClient, onClose, onSaved }: ClientWi
         setStep((s) => s + 1)
       } else {
         const saved = await persist('active')
-        setSavedName(saved.companyName)
+        setSavedClient(saved)
         setSuccessOpen(true)
       }
     } catch (err) {
@@ -110,8 +111,8 @@ export function ClientWizard({ open, initialClient, onClose, onSaved }: ClientWi
 
     setSaving(true)
     try {
-      await persist('draft')
-      onSaved()
+      const saved = await persist('draft')
+      onSaved(saved)
       onClose()
     } catch (err) {
       setBannerError(err instanceof Error ? err.message : 'Failed to save draft')
@@ -193,9 +194,9 @@ export function ClientWizard({ open, initialClient, onClose, onSaved }: ClientWi
 
       <ClientSuccessModal
         open={successOpen}
-        clientName={savedName}
-        onClose={() => { setSuccessOpen(false); onClose(); onSaved() }}
-        onReturnToList={() => { setSuccessOpen(false); onClose(); onSaved() }}
+        clientName={savedClient?.companyName ?? ''}
+        onClose={() => { setSuccessOpen(false); onClose(); if (savedClient) onSaved(savedClient) }}
+        onReturnToList={() => { setSuccessOpen(false); onClose(); if (savedClient) onSaved(savedClient) }}
       />
     </>
   )

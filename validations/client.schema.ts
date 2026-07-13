@@ -48,6 +48,33 @@ const productPreferenceSchema = z.object({
   orderNote: z.string().min(1, 'Order note is required'),
 })
 
+/**
+ * Required Typical Order Value, shared by the final/active persistence schema
+ * and the step-2 UI "Continue" gate. Blank/null/undefined must be treated as
+ * "missing" rather than coerced to 0 (JS coerces Number('') to 0), otherwise
+ * an empty field would silently pass as a valid zero instead of failing the
+ * required check.
+ */
+const requiredTypicalOrderValue = z
+  .union([z.string(), z.number()])
+  .optional()
+  .transform((val, ctx) => {
+    if (val === undefined || val === null || (typeof val === 'string' && val.trim() === '')) {
+      ctx.addIssue({ code: 'custom', message: 'Typical order value is required' })
+      return z.NEVER
+    }
+    const num = typeof val === 'number' ? val : Number(val)
+    if (Number.isNaN(num)) {
+      ctx.addIssue({ code: 'custom', message: 'Typical order value must be a valid number' })
+      return z.NEVER
+    }
+    if (num < 0) {
+      ctx.addIssue({ code: 'custom', message: 'Typical order value cannot be negative' })
+      return z.NEVER
+    }
+    return num
+  })
+
 const PAYMENT_TERMS_VALUES = [
   'custom', '100_advance', '75_advance_balance_dispatch',
   '50_advance_balance_dispatch', '50_advance_balance_delivery',
@@ -116,7 +143,7 @@ export const clientSchema = z
     designation: z.string().optional().or(z.literal('')),
     phone: z.string().min(10, 'Phone must be at least 10 digits').max(15),
     alternatePhone: z.string().optional().or(z.literal('')),
-    email: z.string().email('Invalid email address'),
+    email: z.string().email('Invalid email address').optional().or(z.literal('')),
     sameAsBilling: z.boolean(),
     billingAddress: addressSchema,
     shippingAddress: addressSchema,
@@ -125,7 +152,7 @@ export const clientSchema = z
     defaultPaymentTerms: z.enum(PAYMENT_TERMS_VALUES).optional(),
     customPaymentTerms: z.string().optional().or(z.literal('')),
     preferredPaymentMode: z.enum(['bank_transfer', 'upi', 'cheque', 'cash']).optional(),
-    typicalOrderValue: z.coerce.number().min(0, 'Typical order value cannot be negative').optional(),
+    typicalOrderValue: requiredTypicalOrderValue,
     invoiceRecipientName: z.string().min(1, 'Invoice recipient name is required'),
     invoiceEmail: z.string().email('Invalid invoice email'),
     deliveryDate: z.string().min(1, 'Delivery date is required'),
@@ -178,7 +205,7 @@ export const clientStep1Schema = z.object({
   companyName: z.string().min(2, 'Client name is required'),
   contactPersonName: z.string().min(1, 'Contact person name is required'),
   phone: z.string().min(10, 'Phone number is required'),
-  email: z.string().email('A valid email address is required'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   billingAddress: addressSchema,
   shippingAddress: addressSchema,
 })
@@ -189,6 +216,7 @@ export const clientStep2Schema = z
     gstNumber: z.string().regex(GSTIN_REGEX, 'Invalid GSTIN format').optional().or(z.literal('')),
     defaultPaymentTerms: z.enum(PAYMENT_TERMS_VALUES).optional().or(z.literal('')),
     customPaymentTerms: z.string().optional().or(z.literal('')),
+    typicalOrderValue: requiredTypicalOrderValue,
     invoiceRecipientName: z.string().min(1, 'Invoice recipient name is required'),
     invoiceEmail: z.string().email('A valid invoice email is required'),
     escalationContact: escalationContactSchema,

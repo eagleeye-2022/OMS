@@ -50,13 +50,13 @@ export function CreateOrderModal({ open, initialOrder, onClose, onSaved }: Creat
     defaultValues: initialOrder ? mapOrderToFormValues(initialOrder) : emptyOrderFormValues(),
   })
 
-  const loadClients = useCallback(async (selectNewest = false) => {
+  const loadClients = useCallback(async (selectClientId?: string) => {
     const res = await fetch('/api/clients?limit=200&status=active')
     const data = await res.json()
     if (data.success) {
       setClients(data.data)
-      if (selectNewest && data.data.length > 0) {
-        reset({ ...getValues(), client: data.data[0]._id })
+      if (selectClientId) {
+        reset({ ...getValues(), client: selectClientId })
       }
     }
   }, [reset, getValues])
@@ -77,9 +77,9 @@ export function CreateOrderModal({ open, initialOrder, onClose, onSaved }: Creat
       <ClientWizard
         open
         onClose={() => setClientWizardOpen(false)}
-        onSaved={async () => {
+        onSaved={async (client) => {
           setClientWizardOpen(false)
-          await loadClients(true)
+          await loadClients(client._id)
         }}
       />
     )
