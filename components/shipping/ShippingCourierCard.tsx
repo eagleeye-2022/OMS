@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Pencil, Truck } from 'lucide-react'
+import { Pencil, Truck, AlertTriangle } from 'lucide-react'
 import { Input, Select } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { formatDate } from '@/lib/utils'
@@ -20,6 +20,11 @@ function toDateInput(value?: string) {
 
 export function ShippingCourierCard({ order, canEdit, onUpdated }: ShippingCourierCardProps) {
   const needsDispatch = order.status === 'shipping_ready'
+  // Saving courier details on a shipping_ready order auto-dispatches it (see
+  // the courierPartner intent in app/api/orders/[id]/route.ts) — there's no
+  // way to "prepare" details without triggering that, so once blocked we
+  // don't offer the edit flow at all rather than let it fail on save.
+  const dispatchBlocked = needsDispatch && Boolean(order.dispatchBlockedReason)
   const [editing, setEditing] = useState(false)
   const [courierPartner, setCourierPartner] = useState(order.courierPartner || '')
   const [trackingNumber, setTrackingNumber] = useState(order.trackingNumber || '')
@@ -125,9 +130,15 @@ export function ShippingCourierCard({ order, canEdit, onUpdated }: ShippingCouri
             <p className="text-xs text-gray-400">Expected Delivery</p>
             <p className="text-sm font-medium text-gray-900">{formatDate(order.expectedDeliveryDate)}</p>
           </div>
-          {needsDispatch && canEdit && (
+          {needsDispatch && canEdit && !dispatchBlocked && (
             <div className="col-span-2 mt-1">
               <Button size="sm" icon={<Truck size={14} />} onClick={startEdit}>Dispatch Order</Button>
+            </div>
+          )}
+          {dispatchBlocked && (
+            <div className="col-span-2 mt-1 flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-lg text-sm text-red-700">
+              <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+              <span>{order.dispatchBlockedReason}</span>
             </div>
           )}
         </div>

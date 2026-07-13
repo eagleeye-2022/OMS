@@ -1,5 +1,6 @@
 'use client'
 
+import { AlertTriangle } from 'lucide-react'
 import { DataTable } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -72,9 +73,20 @@ export function ShippingQueueTable({ orders, loading, search, selectedId, onSele
             ),
           },
           {
-            key: 'status', header: 'Status', render: (row) => (
-              <Badge label={ORDER_STATUS_LABEL[row.status as OrderStatus]} className={ORDER_STATUS_COLOR[row.status as OrderStatus]} />
-            ),
+            key: 'status', header: 'Status', render: (row) => {
+              const order = row as unknown as IOrder
+              const dispatchBlocked = order.status === 'shipping_ready' && Boolean(order.dispatchBlockedReason)
+              return (
+                <div className="flex items-center gap-1.5">
+                  <Badge label={ORDER_STATUS_LABEL[order.status]} className={ORDER_STATUS_COLOR[order.status]} />
+                  {dispatchBlocked && (
+                    <span title={order.dispatchBlockedReason ?? undefined} className="flex items-center gap-1 text-xs font-medium text-red-600">
+                      <AlertTriangle size={12} /> Blocked
+                    </span>
+                  )}
+                </div>
+              )
+            },
           },
         ]}
       />

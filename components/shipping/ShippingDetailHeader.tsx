@@ -46,6 +46,13 @@ export function ShippingDetailHeader({ order, onClose }: ShippingDetailHeaderPro
           <span><span className="font-semibold">Delayed:</span> {order.delayReason}</span>
         </div>
       )}
+
+      {order.status === 'shipping_ready' && order.dispatchBlockedReason && (
+        <div className="flex items-start gap-2 mt-3 px-3 py-2 bg-red-50 border border-red-100 rounded-lg text-sm text-red-700">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span><span className="font-semibold">Dispatch blocked:</span> {order.dispatchBlockedReason}</span>
+        </div>
+      )}
     </div>
   )
 }

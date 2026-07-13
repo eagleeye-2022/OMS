@@ -44,18 +44,20 @@ export const CAN_VIEW_CLIENT_DETAILS: Role[] = ['admin', 'sales', 'accounts', 's
 
 /**
  * Restricts a queue listing to "my assigned tasks only" by default for the
- * given roles, with an explicit `view=unassigned` escape hatch for a
- * self-serve pickup bucket — never mixed into the default view. Roles not
- * listed in `restrictedRoles` (e.g. admin/managers) are left unrestricted so
- * they keep seeing everything, same as before this existed.
+ * given roles, with two optional escape hatches — never mixed into the
+ * default view. Roles not listed in `restrictedRoles` (e.g. admin/managers)
+ * are left unrestricted so they keep seeing everything, same as before this
+ * existed.
  *
- * `unassignedViewRoles` gates who may use `view=unassigned` at all — this
- * matters because the rule differs by queue: Creative users may self-serve
- * pick up unassigned work, but Production users may not (unassigned
- * production tasks are Admin-only), so a restricted role not listed here
- * falls straight through to the normal "my assigned tasks" restriction even
- * if it forges `view=unassigned` — it can't use that param to see everyone
- * else's or nobody's tasks.
+ * `unassignedViewRoles` gates who may use `view=unassigned` (a self-serve
+ * pickup bucket — Creative allows this, Production never does: unassigned
+ * production tasks are Admin-only). `allAssignedViewRoles` gates who may use
+ * `view=all` (everyone's assigned tasks, still excluding unassigned —
+ * Production's "All" tab uses this so a Production user can see their
+ * teammates' batches without ever seeing the unassigned bucket). A
+ * restricted role not listed for a given view falls straight through to the
+ * normal "my assigned tasks" restriction even if it forges that param — it
+ * can't use it to see anyone else's or nobody's tasks.
  *
  * Shared shape so every queue applies the identical rule via one function
  * instead of duplicating role/query logic — Creative and Production both
@@ -64,11 +66,21 @@ export const CAN_VIEW_CLIENT_DETAILS: Role[] = ['admin', 'sales', 'accounts', 's
 export function applyOwnQueueVisibility(
   query: Record<string, unknown>,
   session: SessionUser,
-  opts: { restrictedRoles: Role[]; assignmentField: string; view: string; unassignedViewRoles: Role[] }
+  opts: {
+    restrictedRoles: Role[]
+    assignmentField: string
+    view: string
+    unassignedViewRoles: Role[]
+    allAssignedViewRoles?: Role[]
+  }
 ): void {
-  const { restrictedRoles, assignmentField, view, unassignedViewRoles } = opts
+  const { restrictedRoles, assignmentField, view, unassignedViewRoles, allAssignedViewRoles = [] } = opts
   if (view === 'unassigned' && unassignedViewRoles.includes(session.role)) {
     query[assignmentField] = { $exists: false }
+    return
+  }
+  if (view === 'all' && allAssignedViewRoles.includes(session.role)) {
+    query[assignmentField] = { $exists: true }
     return
   }
   if (restrictedRoles.includes(session.role)) {

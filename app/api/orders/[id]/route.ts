@@ -12,7 +12,7 @@ import {
   updateOrderCoreSchema,
   updateShippingDetailsSchema,
 } from '@/validations/order.schema'
-import { applyDirectStatusUpdate } from '@/lib/order-status'
+import { applyDirectStatusUpdate, getDispatchBlockReason } from '@/lib/order-status'
 import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES } from '@/lib/constants'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS } from '@/lib/order-visibility'
 import { PRODUCTION_STAGE_KEY_LABEL, type ProductionStage } from '@/lib/constants'
@@ -50,7 +50,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const logs = await ActivityLog.find({ order: id }).sort({ createdAt: -1 }).limit(20).lean()
 
-    return NextResponse.json({ success: true, data: { order: stripSensitiveOrderFields(order, session.role), logs } })
+    // Computed from the raw (pre-strip) doc — see getDispatchBlockReason's
+    // doc comment on why this must survive stripSensitiveOrderFields.
+    const shapedOrder = { ...stripSensitiveOrderFields(order, session.role), dispatchBlockedReason: getDispatchBlockReason(order) }
+    return NextResponse.json({ success: true, data: { order: shapedOrder, logs } })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
@@ -76,7 +79,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         .populate('client', ORDER_CLIENT_DETAIL_FIELDS)
         .populate('createdBy', 'name')
         .lean()
-      return NextResponse.json({ success: true, data: stripSensitiveOrderFields(updated, role) })
+      const shaped = { ...stripSensitiveOrderFields(updated, role), dispatchBlockedReason: getDispatchBlockReason(updated) }
+      return NextResponse.json({ success: true, data: shaped })
     }
 
     // ── Intent: Design Status Update ─────────────────────────────────────────
@@ -277,9 +281,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
       }
 
-      Object.assign(existing, parsed.data)
-
       const wasShippingReady = existing.status === 'shipping_ready'
+      // Source of truth for the "no dispatch until payment is fully cleared"
+      // rule (see getDispatchBlockReason) — checked against the order's state
+      // *before* this request's changes are applied, and only gates the
+      // shipping_ready -> dispatched transition itself, not later edits to
+      // courier/tracking details on an order that's already past that point
+      // (the package is physically already moving by then; withholding a
+      // details correction doesn't undo that).
+      if (wasShippingReady) {
+        const blockReason = getDispatchBlockReason(existing)
+        if (blockReason) {
+          return NextResponse.json({ success: false, error: blockReason }, { status: 409 })
+        }
+      }
+
+      Object.assign(existing, parsed.data)
       if (wasShippingReady) existing.status = 'dispatched'
 
       await existing.save()

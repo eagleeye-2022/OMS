@@ -219,6 +219,11 @@ export interface IOrder {
   advancePaid?: number
   balanceDue?: number
   paymentStatus?: PaymentStatus
+  // Derived server-side (see lib/order-status.ts's getDispatchBlockReason) —
+  // present for every role, including 'shipping', which never receives raw
+  // paymentStatus above. Non-null means the order is overdue AND unpaid, so
+  // dispatch (shipping_ready -> dispatched) is currently blocked.
+  dispatchBlockedReason?: string | null
   notes: IOrderNote[]
   assets: IOrderAsset[]
   creativeRemarks?: string

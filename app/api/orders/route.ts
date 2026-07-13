@@ -6,6 +6,7 @@ import Client from '@/models/Client'
 import ActivityLog from '@/models/ActivityLog'
 import { orderSchema } from '@/validations/order.schema'
 import { stripSensitiveOrderFields, applyOwnQueueVisibility } from '@/lib/order-visibility'
+import { getDispatchBlockReason } from '@/lib/order-status'
 import { ORDER_STAGE_STATUSES, SHIPPING_RELEVANT_STATUSES } from '@/lib/constants'
 
 function mongoError(err: unknown): NextResponse | null {
@@ -96,17 +97,20 @@ export async function GET(req: NextRequest) {
         unassignedViewRoles: ['creative', 'admin'],
       })
     }
-    // Production users' default (and only) queue is their own assigned
-    // tasks — unlike Creative, there is no self-serve "Unassigned" pickup
-    // bucket for Production: `unassignedViewRoles: ['admin']` means a
-    // Production session forging `view=unassigned` still falls through to
-    // the "my assigned tasks" restriction instead of seeing unassigned work.
+    // Production users' default queue ("My Queue") is their own assigned
+    // tasks; `view=all` broadens that to every *assigned* production order
+    // (teammates' batches included) but still excludes unassigned ones —
+    // unlike Creative, there is no self-serve "Unassigned" pickup bucket for
+    // Production at all: `unassignedViewRoles: ['admin']` means a Production
+    // session forging `view=unassigned` still falls through to the "my
+    // assigned tasks" restriction instead of seeing unassigned work.
     if (relevantTo === 'production') {
       applyOwnQueueVisibility(query, session, {
         restrictedRoles: ['production'],
         assignmentField: 'assignedTeam.productionManager',
         view,
         unassignedViewRoles: ['admin'],
+        allAssignedViewRoles: ['production'],
       })
     }
     if (search) {
@@ -139,7 +143,13 @@ export async function GET(req: NextRequest) {
       Order.countDocuments(query),
     ])
 
-    const data = orders.map((o) => stripSensitiveOrderFields(o, session.role))
+    // Computed from the raw (pre-strip) doc so it still reflects real
+    // paymentStatus even for roles (e.g. 'shipping') that never receive that
+    // field themselves — see getDispatchBlockReason's doc comment.
+    const data = orders.map((o) => ({
+      ...stripSensitiveOrderFields(o, session.role),
+      dispatchBlockedReason: getDispatchBlockReason(o),
+    }))
 
     return NextResponse.json({ success: true, data, total, page, limit })
   } catch (err) {

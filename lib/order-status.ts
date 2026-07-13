@@ -2,8 +2,34 @@ import ActivityLog from '@/models/ActivityLog'
 import Notification from '@/models/Notification'
 import type { IOrderDocument } from '@/models/Order'
 import type { SessionUser } from './auth'
-import type { Role, OrderStatus } from './constants'
+import type { Role, OrderStatus, PaymentStatus } from './constants'
 import { updateOrderStatusSchema } from '@/validations/order.schema'
+
+/**
+ * Dispatch must be blocked until the full order amount is received —
+ * Accounts is the gatekeeper for shipment readiness, and Shipping must never
+ * be able to act before that's confirmed. `paymentStatus === 'paid'` is set
+ * by the existing payment-recording flow (POST /api/payments recomputes it
+ * from advancePaid/totalAmount every time Accounts records a payment — see
+ * RecordPaymentForm) the moment the balance reaches zero; that's the single
+ * source of truth reused here, not a new/duplicate "cleared" concept.
+ *
+ * Previously this only fired when an unpaid order was *also* overdue (a
+ * narrower rule from an earlier iteration of this same requirement). The
+ * business rule has since been broadened to "no dispatch until payment is
+ * fully cleared, full stop" — overdue is no longer part of the condition,
+ * though it's still shown separately in the UI as its own indicator.
+ *
+ * Single source of truth for both the write-path guard (the courierPartner
+ * intent in app/api/orders/[id]/route.ts) and the read-path derived
+ * `dispatchBlockedReason` field so the 'shipping' role — which never
+ * receives raw paymentStatus (see CAN_VIEW_FINANCE) — can still know
+ * *whether* dispatch is blocked without needing financial visibility.
+ */
+export function getDispatchBlockReason(order: { paymentStatus: PaymentStatus }): string | null {
+  if (order.paymentStatus === 'paid') return null
+  return 'Full payment is not cleared. Dispatch is blocked.'
+}
 
 // Which order statuses each role may set via the direct status-update path
 // (PUT's `status` intent and PATCH /api/orders/[id]/status). Creative and
