@@ -9,14 +9,24 @@ interface CreativeDetailDrawerProps {
   order: IOrder | null
   loading: boolean
   isAdmin: boolean
+  currentUserId?: string
+  isCreativeRole?: boolean
   onClose: () => void
   onUpdated: () => void
 }
 
-export function CreativeDetailDrawer({ open, order, loading, isAdmin, onClose, onUpdated }: CreativeDetailDrawerProps) {
+export function CreativeDetailDrawer({ open, order, loading, isAdmin, currentUserId, isCreativeRole, onClose, onUpdated }: CreativeDetailDrawerProps) {
   return (
     <Drawer open={open} onClose={onClose} width="w-[26rem]">
-      <CreativeDetailPage order={order} loading={loading} isAdmin={isAdmin} onUpdated={onUpdated} onClose={onClose} />
+      <CreativeDetailPage
+        order={order}
+        loading={loading}
+        isAdmin={isAdmin}
+        currentUserId={currentUserId}
+        isCreativeRole={isCreativeRole}
+        onUpdated={onUpdated}
+        onClose={onClose}
+      />
     </Drawer>
   )
 }

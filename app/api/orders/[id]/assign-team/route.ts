@@ -53,15 +53,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    if (!['admin', 'sales'].includes(session.role)) {
-      return NextResponse.json({ success: false, error: 'Only sales or admin can assign the order team' }, { status: 403 })
-    }
 
     const { id } = await params
     const body = await req.json()
     const parsed = assignTeamSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
+    }
+
+    const isPrivileged = ['admin', 'sales'].includes(session.role)
+    // A creative user may claim an unassigned task for themselves from the
+    // Unassigned queue — narrower than the admin/sales reassignment above:
+    // only their own id, only the creativeExecutive slot, nothing else in
+    // the same request. The "was actually unassigned" check happens
+    // atomically in the update filter below so two creatives can't race
+    // onto the same task.
+    const isSelfClaim =
+      session.role === 'creative' &&
+      parsed.data.creativeExecutive === session.id &&
+      parsed.data.salesExecutive === undefined &&
+      parsed.data.productionManager === undefined
+    if (!isPrivileged && !isSelfClaim) {
+      return NextResponse.json(
+        { success: false, error: 'Only sales, admin, or a creative user claiming their own unassigned task can assign the order team' },
+        { status: 403 }
+      )
     }
 
     await connectDB()
@@ -71,13 +87,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (parsed.data.creativeExecutive !== undefined) update['assignedTeam.creativeExecutive'] = parsed.data.creativeExecutive || undefined
     if (parsed.data.productionManager !== undefined) update['assignedTeam.productionManager'] = parsed.data.productionManager || undefined
 
-    const order = await Order.findByIdAndUpdate(id, { $set: update }, { new: true })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filter: Record<string, any> = { _id: id }
+    if (isSelfClaim) filter['assignedTeam.creativeExecutive'] = { $exists: false }
+
+    const order = await Order.findOneAndUpdate(filter, { $set: update }, { new: true })
       .populate('assignedTeam.salesExecutive', 'name')
       .populate('assignedTeam.creativeExecutive', 'name')
       .populate('assignedTeam.productionManager', 'name')
       .select('assignedTeam orderNumber')
       .lean()
-    if (!order) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
+    if (!order) {
+      if (isSelfClaim) {
+        return NextResponse.json({ success: false, error: 'This task has already been claimed by someone else' }, { status: 409 })
+      }
+      return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
+    }
 
     await ActivityLog.create({
       type: 'team_assigned',

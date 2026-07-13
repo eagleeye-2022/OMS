@@ -9,15 +9,18 @@ import type { IOrder, IUser } from '@/types'
 interface CreativeAssigneeCardProps {
   order: IOrder
   canEdit: boolean
+  currentUserId?: string
+  isCreativeRole?: boolean
   onUpdated: () => void
 }
 
-export function CreativeAssigneeCard({ order, canEdit, onUpdated }: CreativeAssigneeCardProps) {
+export function CreativeAssigneeCard({ order, canEdit, currentUserId, isCreativeRole, onUpdated }: CreativeAssigneeCardProps) {
   const [editing, setEditing] = useState(false)
   const [options, setOptions] = useState<IUser[]>([])
   const [value, setValue] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [claiming, setClaiming] = useState(false)
 
   useEffect(() => {
     if (editing && options.length === 0) {
@@ -35,6 +38,28 @@ export function CreativeAssigneeCard({ order, canEdit, onUpdated }: CreativeAssi
     setError('')
     setValue(assigneeId)
     setEditing(true)
+  }
+
+  const canClaim = isCreativeRole && !canEdit && !assigneeName && Boolean(currentUserId)
+
+  const claim = async () => {
+    if (!currentUserId) return
+    setClaiming(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/orders/${order._id}/assign-team`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creativeExecutive: currentUserId }),
+      })
+      const data = await res.json()
+      if (data.success) onUpdated()
+      else setError(data.error || 'Failed to claim this task')
+    } catch {
+      setError('Network error')
+    } finally {
+      setClaiming(false)
+    }
   }
 
   const save = async () => {
@@ -78,12 +103,23 @@ export function CreativeAssigneeCard({ order, canEdit, onUpdated }: CreativeAssi
           options={[{ value: '', label: 'Unassigned' }, ...options.map((u) => ({ value: u._id, label: u.name }))]}
         />
       ) : (
-        <div className="flex items-center gap-3">
-          <Avatar name={assigneeName || '?'} size="md" />
-          <div>
-            <p className="text-xs text-gray-500">Creative Executive</p>
-            <p className="text-sm font-semibold text-gray-900">{assigneeName || 'Unassigned'}</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Avatar name={assigneeName || '?'} size="md" />
+            <div>
+              <p className="text-xs text-gray-500">Creative Executive</p>
+              <p className="text-sm font-semibold text-gray-900">{assigneeName || 'Unassigned'}</p>
+            </div>
           </div>
+          {canClaim && (
+            <button
+              onClick={claim}
+              disabled={claiming}
+              className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 whitespace-nowrap"
+            >
+              Claim this task
+            </button>
+          )}
         </div>
       )}
       {error && <p className="text-xs text-red-600 mt-2">{error}</p>}

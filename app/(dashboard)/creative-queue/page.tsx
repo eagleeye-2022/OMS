@@ -9,11 +9,15 @@ import type { IOrder } from '@/types'
 
 export default function CreativeQueuePage() {
   const { user } = useAuth()
+  const isCreativeRole = user?.role === 'creative'
   const [orders, setOrders] = useState<IOrder[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [assignedToMe, setAssignedToMe] = useState(false)
+  // Creative-role-only tab: mutually exclusive with assignedToMe above (that
+  // toggle stays admin's "My Tasks / All", unchanged) — see CreativeHeader.
+  const [showUnassigned, setShowUnassigned] = useState(false)
 
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null)
@@ -26,13 +30,14 @@ export default function CreativeQueuePage() {
   const latestListKeyRef = useRef('')
   const latestOrderIdRef = useRef<string | undefined>(undefined)
 
-  const loadBoard = useCallback(async (q = '', mine = false, silent = false) => {
-    const key = `${q}::${mine}`
+  const loadBoard = useCallback(async (q = '', mine = false, unassigned = false, silent = false) => {
+    const key = `${q}::${mine}::${unassigned}`
     latestListKeyRef.current = key
     if (!silent) setLoading(true)
     try {
       const params = new URLSearchParams({ search: q, relevantTo: 'creative', limit: '200' })
       if (mine) params.set('assignedToMe', 'true')
+      if (unassigned) params.set('view', 'unassigned')
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
       if (latestListKeyRef.current !== key) return
@@ -58,11 +63,11 @@ export default function CreativeQueuePage() {
     }
   }, [])
 
-  useEffect(() => { loadBoard(search, assignedToMe) }, [loadBoard]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadBoard(search, assignedToMe, showUnassigned) }, [loadBoard]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const t = setTimeout(() => loadBoard(search, assignedToMe), 300)
+    const t = setTimeout(() => loadBoard(search, assignedToMe, showUnassigned), 300)
     return () => clearTimeout(t)
-  }, [search, assignedToMe, loadBoard])
+  }, [search, assignedToMe, showUnassigned, loadBoard])
 
   useEffect(() => {
     if (selectedId) loadDetail(selectedId)
@@ -77,7 +82,7 @@ export default function CreativeQueuePage() {
     if (selectedId) loadDetail(selectedId)
     // Silent: a status/remark/asset/assignee change on the open ticket
     // shouldn't blank the whole board into a loading skeleton.
-    loadBoard(search, assignedToMe, true)
+    loadBoard(search, assignedToMe, showUnassigned, true)
   }
 
   return (
@@ -86,8 +91,11 @@ export default function CreativeQueuePage() {
         total={total}
         search={search}
         onSearchChange={setSearch}
+        isCreativeRole={isCreativeRole}
         assignedToMe={assignedToMe}
         onAssignedToMeChange={setAssignedToMe}
+        showUnassigned={showUnassigned}
+        onShowUnassignedChange={setShowUnassigned}
       />
 
       <CreativeBoard
@@ -103,6 +111,8 @@ export default function CreativeQueuePage() {
         order={selectedOrder}
         loading={detailLoading}
         isAdmin={user?.role === 'admin'}
+        currentUserId={user?.id}
+        isCreativeRole={isCreativeRole}
         onClose={() => setDrawerOpen(false)}
         onUpdated={handleUpdated}
       />

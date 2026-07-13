@@ -14,6 +14,8 @@ interface CreativeDetailPageProps {
   order: IOrder | null
   loading: boolean
   isAdmin: boolean
+  currentUserId?: string
+  isCreativeRole?: boolean
   onUpdated: () => void
   onClose?: () => void
 }
@@ -23,7 +25,7 @@ interface CreativeDetailPageProps {
  * drawer (via CreativeDetailDrawer) and the standalone /creative-queue/[id]
  * route, matching the two-view pattern used by the Client and Order modules.
  */
-export function CreativeDetailPage({ order, loading, isAdmin, onUpdated, onClose }: CreativeDetailPageProps) {
+export function CreativeDetailPage({ order, loading, isAdmin, currentUserId, isCreativeRole, onUpdated, onClose }: CreativeDetailPageProps) {
   if (loading) return <PageLoader />
 
   if (!order) {
@@ -33,7 +35,7 @@ export function CreativeDetailPage({ order, loading, isAdmin, onUpdated, onClose
   return (
     <div className="space-y-5">
       <CreativeDetailHeader order={order} onUpdated={onUpdated} onClose={onClose} />
-      <CreativeAssigneeCard order={order} canEdit={isAdmin} onUpdated={onUpdated} />
+      <CreativeAssigneeCard order={order} canEdit={isAdmin} currentUserId={currentUserId} isCreativeRole={isCreativeRole} onUpdated={onUpdated} />
       <CreativeOrderSummaryCard order={order} />
       <CreativeFilesCard order={order} canEdit onUpdated={onUpdated} />
       <CreativeRemarksCard order={order} onUpdated={onUpdated} />

@@ -1,3 +1,4 @@
+import type { SessionUser } from './auth'
 import { NOTE_TYPE_ACCESS, type Role, type NoteType } from './constants'
 
 const FINANCE_FIELDS = ['totalAmount', 'advancePaid', 'balanceDue', 'paymentStatus', 'invoice'] as const
@@ -40,6 +41,40 @@ const CLIENT_DETAIL_FIELDS = [
 // Includes 'shipping' — the delivery address lives on the embedded client
 // object, and a shipping operator needs it to actually ship anything.
 export const CAN_VIEW_CLIENT_DETAILS: Role[] = ['admin', 'sales', 'accounts', 'shipping']
+
+/**
+ * Restricts a queue listing to "my assigned tasks only" by default for the
+ * given roles, with an explicit `view=unassigned` escape hatch for a
+ * self-serve pickup bucket — never mixed into the default view. Roles not
+ * listed in `restrictedRoles` (e.g. admin/managers) are left unrestricted so
+ * they keep seeing everything, same as before this existed.
+ *
+ * `unassignedViewRoles` gates who may use `view=unassigned` at all — this
+ * matters because the rule differs by queue: Creative users may self-serve
+ * pick up unassigned work, but Production users may not (unassigned
+ * production tasks are Admin-only), so a restricted role not listed here
+ * falls straight through to the normal "my assigned tasks" restriction even
+ * if it forges `view=unassigned` — it can't use that param to see everyone
+ * else's or nobody's tasks.
+ *
+ * Shared shape so every queue applies the identical rule via one function
+ * instead of duplicating role/query logic — Creative and Production both
+ * call this today (see app/api/orders/route.ts).
+ */
+export function applyOwnQueueVisibility(
+  query: Record<string, unknown>,
+  session: SessionUser,
+  opts: { restrictedRoles: Role[]; assignmentField: string; view: string; unassignedViewRoles: Role[] }
+): void {
+  const { restrictedRoles, assignmentField, view, unassignedViewRoles } = opts
+  if (view === 'unassigned' && unassignedViewRoles.includes(session.role)) {
+    query[assignmentField] = { $exists: false }
+    return
+  }
+  if (restrictedRoles.includes(session.role)) {
+    query[assignmentField] = session.id
+  }
+}
 
 /**
  * Filters an order's notes array down to only the domains a role may see.

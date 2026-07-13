@@ -5,7 +5,7 @@ import Order from '@/models/Order'
 import Client from '@/models/Client'
 import ActivityLog from '@/models/ActivityLog'
 import { orderSchema } from '@/validations/order.schema'
-import { stripSensitiveOrderFields } from '@/lib/order-visibility'
+import { stripSensitiveOrderFields, applyOwnQueueVisibility } from '@/lib/order-visibility'
 import { ORDER_STAGE_STATUSES, SHIPPING_RELEVANT_STATUSES } from '@/lib/constants'
 
 function mongoError(err: unknown): NextResponse | null {
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
     const stage = searchParams.get('stage') || ''
     const relevantTo = searchParams.get('relevantTo') || ''
     const assignedToMe = searchParams.get('assignedToMe') === 'true'
+    const view = searchParams.get('view') || ''
     // Excludes cancelled orders from the result set — the query-layer
     // equivalent of the same `status: { $ne: 'cancelled' }` rule already
     // used by app/api/accounts/summary/route.ts, so any list consumer that
@@ -80,6 +81,33 @@ export async function GET(req: NextRequest) {
       } else {
         query['assignedTeam.creativeExecutive'] = session.id
       }
+    }
+    // Creative users' default queue is their own assigned tasks only — the
+    // server enforces this independent of `assignedToMe` (which the block
+    // above still honors as an explicit admin/manager filter) so it can't be
+    // bypassed by omitting or forging a client-side param. `view=unassigned`
+    // opts into the separate self-serve pickup bucket instead of "mine";
+    // admin/managers may also pass it, but are never restricted by default.
+    if (relevantTo === 'creative') {
+      applyOwnQueueVisibility(query, session, {
+        restrictedRoles: ['creative'],
+        assignmentField: 'assignedTeam.creativeExecutive',
+        view,
+        unassignedViewRoles: ['creative', 'admin'],
+      })
+    }
+    // Production users' default (and only) queue is their own assigned
+    // tasks — unlike Creative, there is no self-serve "Unassigned" pickup
+    // bucket for Production: `unassignedViewRoles: ['admin']` means a
+    // Production session forging `view=unassigned` still falls through to
+    // the "my assigned tasks" restriction instead of seeing unassigned work.
+    if (relevantTo === 'production') {
+      applyOwnQueueVisibility(query, session, {
+        restrictedRoles: ['production'],
+        assignmentField: 'assignedTeam.productionManager',
+        view,
+        unassignedViewRoles: ['admin'],
+      })
     }
     if (search) {
       // Client is a reference, so a plain regex on Order can't reach the

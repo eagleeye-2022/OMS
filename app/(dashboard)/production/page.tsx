@@ -22,7 +22,8 @@ export default function ProductionPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const isAdmin = user?.role === 'admin'
-  const canEditStages = user?.role === 'admin' || user?.role === 'production'
+  const isProductionRole = user?.role === 'production'
+  const canEditStages = isAdmin || isProductionRole
 
   // Tracks the most recently *requested* list query / order id so an
   // out-of-order network response can be detected and discarded instead of
@@ -90,6 +91,7 @@ export default function ProductionPage() {
         total={total}
         search={search}
         onSearchChange={setSearch}
+        isProductionRole={isProductionRole}
         assignedToMe={assignedToMe}
         onAssignedToMeChange={setAssignedToMe}
       />

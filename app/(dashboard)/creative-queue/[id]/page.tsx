@@ -35,7 +35,14 @@ export default function CreativeQueueDetailPage({ params }: { params: Promise<{ 
         <h1 className="text-xl font-bold text-gray-900">Creative Queue Details</h1>
       </div>
 
-      <CreativeDetailPage order={order} loading={loading} isAdmin={user?.role === 'admin'} onUpdated={load} />
+      <CreativeDetailPage
+        order={order}
+        loading={loading}
+        isAdmin={user?.role === 'admin'}
+        currentUserId={user?.id}
+        isCreativeRole={user?.role === 'creative'}
+        onUpdated={load}
+      />
     </div>
   )
 }
