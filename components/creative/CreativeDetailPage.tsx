@@ -8,7 +8,7 @@ import { CreativeOrderSummaryCard } from './CreativeOrderSummaryCard'
 import { CreativeFilesCard } from './CreativeFilesCard'
 import { CreativeRemarksCard } from './CreativeRemarksCard'
 import { CreativeRevisionLogCard } from './CreativeRevisionLogCard'
-import type { IOrder } from '@/types'
+import type { IOrder, IUser } from '@/types'
 
 interface CreativeDetailPageProps {
   order: IOrder | null
@@ -32,12 +32,22 @@ export function CreativeDetailPage({ order, loading, isAdmin, currentUserId, isC
     return <EmptyState title="Order not found" description="This order may have been removed or you don't have access to it." />
   }
 
+  // A non-admin creative user may only edit design status / files on an order
+  // claimed by *them* — this page is reachable by direct id/URL, not just
+  // through the (already-filtered) queue list, so it mirrors the ownership
+  // check the API now enforces (isOrderAssignedToSelf) rather than trusting
+  // role alone. An unclaimed order stays read-only here too; "Claim this
+  // task" (CreativeAssigneeCard) is the only way in.
+  const assignee = order.assignedTeam?.creativeExecutive as IUser | string | undefined
+  const assigneeId = assignee ? (typeof assignee === 'string' ? assignee : assignee._id) : ''
+  const isOwnOrder = isAdmin || (Boolean(isCreativeRole) && assigneeId === currentUserId)
+
   return (
     <div className="space-y-5">
-      <CreativeDetailHeader order={order} onUpdated={onUpdated} onClose={onClose} />
+      <CreativeDetailHeader order={order} canEdit={isOwnOrder} onUpdated={onUpdated} onClose={onClose} />
       <CreativeAssigneeCard order={order} canEdit={isAdmin} currentUserId={currentUserId} isCreativeRole={isCreativeRole} onUpdated={onUpdated} />
       <CreativeOrderSummaryCard order={order} />
-      <CreativeFilesCard order={order} canEdit onUpdated={onUpdated} />
+      <CreativeFilesCard order={order} canEdit={isOwnOrder} onUpdated={onUpdated} />
       <CreativeRemarksCard order={order} onUpdated={onUpdated} />
       <CreativeRevisionLogCard revisionHistory={order.revisionHistory} />
     </div>

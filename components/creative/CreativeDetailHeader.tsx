@@ -7,11 +7,12 @@ import type { IOrder } from '@/types'
 
 interface CreativeDetailHeaderProps {
   order: IOrder
+  canEdit: boolean
   onUpdated: () => void
   onClose?: () => void
 }
 
-export function CreativeDetailHeader({ order, onUpdated, onClose }: CreativeDetailHeaderProps) {
+export function CreativeDetailHeader({ order, canEdit, onUpdated, onClose }: CreativeDetailHeaderProps) {
   const daysLeft = getDaysUntilDeadline(order.deliveryDate)
   const isDone = order.status === 'delivered' || order.status === 'cancelled'
 
@@ -20,7 +21,7 @@ export function CreativeDetailHeader({ order, onUpdated, onClose }: CreativeDeta
       <div>
         <h2 className="text-lg font-bold text-gray-900">{order.orderNumber}</h2>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
-          <CreativeStatusControl order={order} onUpdated={onUpdated} />
+          <CreativeStatusControl order={order} canEdit={canEdit} onUpdated={onUpdated} />
           {!isDone && (
             <span className={cn(
               'flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium',

@@ -88,6 +88,58 @@ export function applyOwnQueueVisibility(
   }
 }
 
+/** Extracts a comparable id string from an assignedTeam slot, whether it's a raw ObjectId, a populated {_id, name} doc, or unset. */
+function assigneeIdString(value: unknown): string | undefined {
+  if (!value) return undefined
+  if (typeof value === 'object' && '_id' in (value as Record<string, unknown>)) {
+    return String((value as { _id: unknown })._id)
+  }
+  return String(value)
+}
+
+/**
+ * Whether `order` is currently assigned to this exact session user in the
+ * given slot — used to gate WRITE actions (design-status edits, production-
+ * stage edits, production-complete) so a creative/production user can't act
+ * on a teammate's order just by knowing/guessing its id. Works against both
+ * an unpopulated Mongoose document (raw ObjectId) and a populated/lean object
+ * ({_id, name}), since PUT /api/orders/[id] uses the former and GET the latter.
+ */
+export function isOrderAssignedToSelf(
+  order: { assignedTeam?: { creativeExecutive?: unknown; productionManager?: unknown } | null },
+  session: SessionUser,
+  assignmentField: 'creativeExecutive' | 'productionManager'
+): boolean {
+  const id = assigneeIdString(order.assignedTeam?.[assignmentField])
+  return id !== undefined && id === session.id
+}
+
+/**
+ * Whether a 'creative' or 'production' session may view this order's detail
+ * at all (GET /api/orders/[id]) — mirrors applyOwnQueueVisibility's list
+ * rules so list and detail can never disagree. Creative may view their own
+ * claimed work plus the still-unclaimed pool (matching the Unassigned tab);
+ * production may view any order assigned to *some* production user, own or a
+ * teammate's (matching the My Queue/All tabs — there is no unassigned view
+ * for production). Every other role is unrestricted, same as before this
+ * existed. Closes the gap where applyOwnQueueVisibility only filtered the
+ * list query, never the item-level GET, so a restricted-role user could
+ * bypass "my queue only" simply by opening an order's detail URL directly.
+ */
+export function canViewOrderDetail(
+  order: { assignedTeam?: { creativeExecutive?: unknown; productionManager?: unknown } | null },
+  session: SessionUser
+): boolean {
+  if (session.role === 'creative') {
+    const id = assigneeIdString(order.assignedTeam?.creativeExecutive)
+    return id === undefined || id === session.id
+  }
+  if (session.role === 'production') {
+    return assigneeIdString(order.assignedTeam?.productionManager) !== undefined
+  }
+  return true
+}
+
 /**
  * Filters an order's notes array down to only the domains a role may see.
  * Notes without a noteType (pre-migration data) are treated as 'general' so
@@ -101,6 +153,30 @@ export function filterNotesForRole<T extends { noteType?: string }>(notes: T[], 
 /** Whether a role may create a note tagged with the given domain. */
 export function canWriteNoteType(role: Role, noteType: NoteType): boolean {
   return (NOTE_TYPE_ACCESS[role] ?? []).includes(noteType)
+}
+
+// ActivityLog descriptions are free-text and frequently embed the exact
+// figures/details FINANCE_FIELDS/SHIPPING_FIELDS otherwise strip from the
+// order object itself (e.g. "Payment of ₹77,777 recorded for ORD-2135",
+// "Order ORD-2135 dispatched via SecretCourierXYZ") — a side-channel that
+// bypassed stripSensitiveOrderFields entirely, since logs travel alongside
+// the order in the same API response but were never filtered themselves.
+const FINANCE_ACTIVITY_TYPES = new Set(['payment_recorded', 'invoice_uploaded', 'payment_reminder_sent'])
+const SHIPPING_ACTIVITY_TYPES = new Set(['order_dispatched'])
+
+/**
+ * Filters an order's activity-log entries down to ones whose description
+ * can't reveal finance/shipping data the viewing role isn't allowed to see —
+ * the log-entry equivalent of stripSensitiveOrderFields. Entries of any other
+ * type (status changes, assignment, production progress, notes/assets added)
+ * are unaffected; they don't embed protected figures.
+ */
+export function filterActivityLogsForRole<T extends { type: string }>(logs: T[], role: Role): T[] {
+  return logs.filter((log) => {
+    if (FINANCE_ACTIVITY_TYPES.has(log.type) && !CAN_VIEW_FINANCE.includes(role)) return false
+    if (SHIPPING_ACTIVITY_TYPES.has(log.type) && !CAN_VIEW_SHIPPING.includes(role)) return false
+    return true
+  })
 }
 
 /**

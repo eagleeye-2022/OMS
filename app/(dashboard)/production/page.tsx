@@ -118,6 +118,7 @@ export default function ProductionPage() {
         loading={detailLoading}
         isAdmin={isAdmin}
         canEditStages={canEditStages}
+        currentUserId={user?.id}
         onClose={() => setDrawerOpen(false)}
         onUpdated={handleUpdated}
       />

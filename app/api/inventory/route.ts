@@ -19,7 +19,9 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
-    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    }
     const body = await req.json()
     await connectDB()
     const item = await Inventory.create({ ...body, lastUpdated: new Date() })

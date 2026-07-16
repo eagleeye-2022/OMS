@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth'
 import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
 import { orderAssetSchema } from '@/validations/order.schema'
+import { canViewOrderDetail } from '@/lib/order-visibility'
 
 const ALLOWED_ROLES = ['admin', 'sales', 'creative', 'production']
 
@@ -15,8 +16,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params
     await connectDB()
 
-    const order = await Order.findById(id).select('assets').lean()
+    const order = await Order.findById(id).select('assets assignedTeam').lean()
     if (!order) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
+    if (!canViewOrderDetail(order, session)) {
+      return NextResponse.json({ success: false, error: 'You do not have access to this order' }, { status: 403 })
+    }
 
     return NextResponse.json({ success: true, data: order.assets })
   } catch (err) {
@@ -41,6 +45,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     await connectDB()
+
+    // Same "can't act on what you can't see" gate as notes — a creative/
+    // production user must be allowed to view this order before uploading an
+    // asset to it.
+    const existing = await Order.findById(id).select('assignedTeam').lean()
+    if (!existing) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
+    if (!canViewOrderDetail(existing, session)) {
+      return NextResponse.json({ success: false, error: 'You do not have access to this order' }, { status: 403 })
+    }
 
     const asset = { ...parsed.data, addedBy: session.id, addedByName: session.name, addedAt: new Date() }
     const order = await Order.findByIdAndUpdate(id, { $push: { assets: asset } }, { new: true }).select('assets orderNumber').lean()

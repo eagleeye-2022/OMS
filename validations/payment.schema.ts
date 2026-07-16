@@ -12,3 +12,18 @@ export const paymentSchema = z.object({
 })
 
 export type PaymentInput = z.infer<typeof paymentSchema>
+
+/**
+ * Correction-only edit of an existing payment receipt — deliberately
+ * excludes `order`/`client`/`amount`/`receiptNumber`/`recordedBy`. `amount`
+ * in particular must never be editable here: POST /api/payments recomputes
+ * the linked Order's advancePaid/balanceDue/paymentStatus at creation time,
+ * and this route has no equivalent recompute step, so changing amount here
+ * would silently desync the payment ledger from the order's derived totals.
+ */
+export const paymentCorrectionSchema = z.object({
+  paymentDate: z.string().min(1).optional(),
+  method: z.string().min(1).optional(),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
+})

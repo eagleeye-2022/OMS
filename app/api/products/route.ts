@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Product from '@/models/Product'
+import { CAN_VIEW_FINANCE } from '@/lib/order-visibility'
 
 export async function GET() {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    // basePrice is a financial figure — same role gate as every other
+    // pricing-bearing field in the app (CAN_VIEW_FINANCE).
+    if (!CAN_VIEW_FINANCE.includes(session.role)) {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    }
     await connectDB()
     const products = await Product.find({ isActive: true }).sort({ category: 1, name: 1 }).lean()
     return NextResponse.json({ success: true, data: products })

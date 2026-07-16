@@ -11,13 +11,14 @@ import { ProductionStageProgressCard } from './ProductionStageProgressCard'
 import { ProductionChecklistCard } from './ProductionChecklistCard'
 import { ProductionRemarksCard } from './ProductionRemarksCard'
 import { ProductionHistoryCard } from './ProductionHistoryCard'
-import type { IOrder, OrderStatus } from '@/types'
+import type { IOrder, IUser, OrderStatus } from '@/types'
 
 interface ProductionDetailPageProps {
   order: IOrder | null
   loading: boolean
   isAdmin: boolean
   canEditStages: boolean
+  currentUserId?: string
   onUpdated: () => void
   onClose?: () => void
 }
@@ -27,7 +28,7 @@ interface ProductionDetailPageProps {
  * drawer (via ProductionDetailDrawer) and the standalone /production/[id]
  * route, matching the drawer+page duality proven for Clients/Orders/Creative.
  */
-export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, onUpdated, onClose }: ProductionDetailPageProps) {
+export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, currentUserId, onUpdated, onClose }: ProductionDetailPageProps) {
   if (loading) return <PageLoader />
 
   if (!order) {
@@ -43,6 +44,17 @@ export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, o
   // so the UI never offers an action the API would reject anyway.
   const blockReason = getProductionBlockReason(order.status as OrderStatus)
   const productionBlocked = !isAdmin && blockReason !== null
+
+  // A non-admin production user may only edit stage progress on an order
+  // assigned to *them* — "All" view intentionally lets them see a teammate's
+  // assigned order (read-only, for coordination), and this detail page is
+  // also reachable by direct id/URL, so this mirrors the ownership check the
+  // API now enforces (isOrderAssignedToSelf) rather than trusting the
+  // role-only `canEditStages` flag alone.
+  const assignee = order.assignedTeam?.productionManager as IUser | string | undefined
+  const assigneeId = assignee ? (typeof assignee === 'string' ? assignee : assignee._id) : ''
+  const isOwnOrder = isAdmin || assigneeId === currentUserId
+  const effectiveCanEditStages = canEditStages && isOwnOrder
 
   return (
     <div className="space-y-5">
@@ -60,8 +72,8 @@ export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, o
 
       <ProductionAssigneeCard order={order} canEdit={isAdmin} onUpdated={onUpdated} />
       <ProductionOrderSummaryCard order={order} />
-      <ProductionStageProgressCard order={order} canEdit={canEditStages && !productionBlocked} onUpdated={onUpdated} />
-      <ProductionChecklistCard order={order} canComplete={canEditStages && !productionBlocked} onCompleted={onUpdated} />
+      <ProductionStageProgressCard order={order} canEdit={effectiveCanEditStages && !productionBlocked} onUpdated={onUpdated} />
+      <ProductionChecklistCard order={order} canComplete={effectiveCanEditStages && !productionBlocked} onCompleted={onUpdated} />
 
       {order.creativeRemarks && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">

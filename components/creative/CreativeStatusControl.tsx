@@ -12,10 +12,11 @@ const OPTIONS = Object.values(DESIGN_STATUS)
 
 interface CreativeStatusControlProps {
   order: IOrder
+  canEdit: boolean
   onUpdated: () => void
 }
 
-export function CreativeStatusControl({ order, onUpdated }: CreativeStatusControlProps) {
+export function CreativeStatusControl({ order, canEdit, onUpdated }: CreativeStatusControlProps) {
   const [open, setOpen] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<DesignStatus | null>(null)
   const [revisionNote, setRevisionNote] = useState('')
@@ -68,6 +69,14 @@ export function CreativeStatusControl({ order, onUpdated }: CreativeStatusContro
       return
     }
     submit(status)
+  }
+
+  if (!canEdit) {
+    return (
+      <span className={cn('inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold', DESIGN_STATUS_COLOR[order.designStatus])}>
+        {DESIGN_STATUS_LABEL[order.designStatus]}
+      </span>
+    )
   }
 
   return (

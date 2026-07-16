@@ -6,7 +6,9 @@ import Inventory from '@/models/Inventory'
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession()
-    if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    if (!session || session.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    }
     const { id } = await params
     const body = await req.json()
     await connectDB()

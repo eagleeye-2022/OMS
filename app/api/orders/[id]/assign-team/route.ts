@@ -82,16 +82,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await connectDB()
 
-    const update: Record<string, string | undefined> = {}
-    if (parsed.data.salesExecutive !== undefined) update['assignedTeam.salesExecutive'] = parsed.data.salesExecutive || undefined
-    if (parsed.data.creativeExecutive !== undefined) update['assignedTeam.creativeExecutive'] = parsed.data.creativeExecutive || undefined
-    if (parsed.data.productionManager !== undefined) update['assignedTeam.productionManager'] = parsed.data.productionManager || undefined
+    // A cleared slot (empty string, meaning "Unassigned" chosen in the
+    // dropdown) must go through $unset, not $set — Mongoose silently drops
+    // undefined-valued keys from a $set, so `{ $set: { '...': undefined } }`
+    // used to be a no-op that still returned 200, leaving the field assigned
+    // forever with no way to actually clear it back to Unassigned.
+    const setFields: Record<string, string> = {}
+    const unsetFields: Record<string, ''> = {}
+    const assign = (field: string, value: string | undefined) => {
+      if (value === undefined) return
+      if (value) setFields[field] = value
+      else unsetFields[field] = ''
+    }
+    assign('assignedTeam.salesExecutive', parsed.data.salesExecutive)
+    assign('assignedTeam.creativeExecutive', parsed.data.creativeExecutive)
+    assign('assignedTeam.productionManager', parsed.data.productionManager)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = { _id: id }
     if (isSelfClaim) filter['assignedTeam.creativeExecutive'] = { $exists: false }
 
-    const order = await Order.findOneAndUpdate(filter, { $set: update }, { new: true })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateOp: Record<string, any> = {}
+    if (Object.keys(setFields).length) updateOp.$set = setFields
+    if (Object.keys(unsetFields).length) updateOp.$unset = unsetFields
+
+    const order = await Order.findOneAndUpdate(filter, updateOp, { new: true })
       .populate('assignedTeam.salesExecutive', 'name')
       .populate('assignedTeam.creativeExecutive', 'name')
       .populate('assignedTeam.productionManager', 'name')

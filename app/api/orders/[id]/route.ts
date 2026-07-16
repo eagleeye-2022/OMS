@@ -14,7 +14,7 @@ import {
 } from '@/validations/order.schema'
 import { applyDirectStatusUpdate, getDispatchBlockReason } from '@/lib/order-status'
 import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES } from '@/lib/constants'
-import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS } from '@/lib/order-visibility'
+import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS, canViewOrderDetail, isOrderAssignedToSelf, filterActivityLogsForRole } from '@/lib/order-visibility'
 import { PRODUCTION_STAGE_KEY_LABEL, type ProductionStage } from '@/lib/constants'
 
 function mongoError(err: unknown): NextResponse | null {
@@ -47,13 +47,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       .lean()
 
     if (!order) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
+    if (!canViewOrderDetail(order, session)) {
+      return NextResponse.json({ success: false, error: 'You do not have access to this order' }, { status: 403 })
+    }
 
     const logs = await ActivityLog.find({ order: id }).sort({ createdAt: -1 }).limit(20).lean()
 
     // Computed from the raw (pre-strip) doc — see getDispatchBlockReason's
     // doc comment on why this must survive stripSensitiveOrderFields.
     const shapedOrder = { ...stripSensitiveOrderFields(order, session.role), dispatchBlockedReason: getDispatchBlockReason(order) }
-    return NextResponse.json({ success: true, data: { order: shapedOrder, logs } })
+    return NextResponse.json({ success: true, data: { order: shapedOrder, logs: filterActivityLogsForRole(logs, session.role) } })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
@@ -89,6 +92,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (role !== 'admin' && role !== 'creative') {
         return NextResponse.json(
           { success: false, error: 'Only the creative team or admin can update design status' },
+          { status: 403 }
+        )
+      }
+      if (role === 'creative' && !isOrderAssignedToSelf(existing, session, 'creativeExecutive')) {
+        return NextResponse.json(
+          { success: false, error: 'You are not assigned to this order — claim it from the Unassigned queue first' },
           { status: 403 }
         )
       }
@@ -161,6 +170,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         )
       }
       if (role === 'production') {
+        if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
+          return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
+        }
         const blockReason = getProductionBlockReason(existing.status)
         if (blockReason) {
           return NextResponse.json({ success: false, error: blockReason }, { status: 409 })
@@ -213,6 +225,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         )
       }
       if (role === 'production') {
+        if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
+          return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
+        }
         const blockReason = getProductionBlockReason(existing.status)
         if (blockReason) {
           return NextResponse.json({ success: false, error: blockReason }, { status: 409 })

@@ -38,7 +38,7 @@ export default function ProductionDetailRoute({ params }: { params: Promise<{ id
         <h1 className="text-xl font-bold text-gray-900">Production Detail</h1>
       </div>
 
-      <ProductionDetailPage order={order} loading={loading} isAdmin={isAdmin} canEditStages={canEditStages} onUpdated={load} />
+      <ProductionDetailPage order={order} loading={loading} isAdmin={isAdmin} canEditStages={canEditStages} currentUserId={user?.id} onUpdated={load} />
     </div>
   )
 }

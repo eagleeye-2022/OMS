@@ -10,14 +10,15 @@ interface ProductionDetailDrawerProps {
   loading: boolean
   isAdmin: boolean
   canEditStages: boolean
+  currentUserId?: string
   onClose: () => void
   onUpdated: () => void
 }
 
-export function ProductionDetailDrawer({ open, order, loading, isAdmin, canEditStages, onClose, onUpdated }: ProductionDetailDrawerProps) {
+export function ProductionDetailDrawer({ open, order, loading, isAdmin, canEditStages, currentUserId, onClose, onUpdated }: ProductionDetailDrawerProps) {
   return (
     <Drawer open={open} onClose={onClose} width="w-[26rem]">
-      <ProductionDetailPage order={order} loading={loading} isAdmin={isAdmin} canEditStages={canEditStages} onUpdated={onUpdated} onClose={onClose} />
+      <ProductionDetailPage order={order} loading={loading} isAdmin={isAdmin} canEditStages={canEditStages} currentUserId={currentUserId} onUpdated={onUpdated} onClose={onClose} />
     </Drawer>
   )
 }
