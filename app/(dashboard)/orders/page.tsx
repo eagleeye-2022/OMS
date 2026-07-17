@@ -43,7 +43,15 @@ export default function OrdersPage() {
     latestListKeyRef.current = key
     if (!silent) setListLoading(true)
     try {
-      const params = new URLSearchParams({ search: q, stage: st, limit: '50' })
+      // limit=200 matches every other list page in the app (Accounts, Shipping,
+      // Creative, Production) — Orders was the one page left at a much lower
+      // cap with zero pagination UI to reach anything past it. Once total
+      // orders passed 50, any order whose nearest deadline wasn't among the
+      // most urgent silently fell outside this fetch and was unreachable from
+      // the list (confirmed live: a freshly created order ranked outside the
+      // old 50-item window while its DB record, client link, and status were
+      // all correct — this was a visibility ceiling, not a data bug).
+      const params = new URLSearchParams({ search: q, stage: st, limit: '200' })
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
       if (latestListKeyRef.current !== key) return // a newer search/filter superseded this one

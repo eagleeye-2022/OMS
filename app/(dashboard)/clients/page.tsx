@@ -39,7 +39,11 @@ export default function ClientsPage() {
     latestSearchRef.current = q
     setListLoading(true)
     try {
-      const res = await fetch(`/api/clients?search=${encodeURIComponent(q)}&limit=50`)
+      // limit=200, matching every other list page (Orders/Accounts/Shipping/
+      // Creative/Production) — see app/(dashboard)/orders/page.tsx's loadList
+      // for the confirmed-live bug this same low-limit/no-pagination pattern
+      // caused there once total records outgrew the old cap.
+      const res = await fetch(`/api/clients?search=${encodeURIComponent(q)}&limit=200`)
       const data = await res.json()
       if (latestSearchRef.current !== q) return // a newer search superseded this one
       if (data.success) {
