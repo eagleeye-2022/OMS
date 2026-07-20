@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { connectDB } from '@/lib/db'
 import { signToken, verifyToken, SESSION_COOKIE } from '@/lib/auth'
 import User from '@/models/User'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 export async function GET() {
   const cookieStore = await cookies()
@@ -26,6 +27,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: 'Email and password are required' }, { status: 400 })
   }
 
+  const ip = getClientIp(req)
+  const normalizedEmail = email.toLowerCase()
+  const ipAllowed = await checkRateLimit(`login:${ip}`, 10, 15 * 60 * 1000)
+  const emailAllowed = await checkRateLimit(`login:${normalizedEmail}`, 5, 15 * 60 * 1000)
+  if (!ipAllowed || !emailAllowed) {
+    return NextResponse.json({ success: false, error: 'Too many login attempts. Please try again later.' }, { status: 429 })
+  }
+
   try {
     await connectDB()
   } catch (err) {
@@ -37,9 +46,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const user = await User.findOne({ email: email.toLowerCase(), isActive: true }).select('+password')
+    const user = await User.findOne({ email: normalizedEmail, isActive: true }).select('+password')
     if (!user || !(await user.comparePassword(password))) {
-      return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 })
+      console.warn(JSON.stringify({ event: 'login_failed', email: normalizedEmail, ip }))
+      return NextResponse.json({ success: false, error: 'Incorrect email or password' }, { status: 401 })
     }
 
     const sessionUser = { id: user._id.toString(), name: user.name, email: user.email, role: user.role }

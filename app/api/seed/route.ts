@@ -30,7 +30,10 @@ export async function POST() {
       Product.deleteMany({}),
     ])
 
-    // Seed Users
+    // Dev-only demo data — this route is blocked in production (see the
+    // NODE_ENV guard above). To go live with real emails/roles, use
+    // app/api/admin/bootstrap/route.ts's DEMO_USERS array instead, which is
+    // the production-safe, token-gated equivalent of the user list below.
     const users = await User.create([
       { name: 'Aryan Mehta', email: 'admin@untitledstore.com', password: 'Admin@123', role: 'admin', phone: '9876543210', isActive: true },
       { name: 'Priya Sharma', email: 'sales@untitledstore.com', password: 'Sales@123', role: 'sales', phone: '9876543211', isActive: true },

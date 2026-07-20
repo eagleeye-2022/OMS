@@ -6,9 +6,35 @@ import type { Role } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
 
-// Same demo/admin accounts app/api/seed/route.ts creates locally — kept here
-// as a self-contained literal (rather than imported) so this route has no
-// dependency on the dev-only seed script ever changing shape.
+// ============================================================================
+// PASTE YOUR REAL USERS HERE when you're ready to go live — replace this
+// array with your actual team's { name, email, password, role, phone } list.
+// `role` must be one of the Role values in lib/constants.ts (admin, sales,
+// creative, production, shipping, accounts) — that's the single source of
+// truth ROLE_PERMISSIONS/ROLE_DEFAULT_REDIRECT read from, so any role you
+// assign here automatically gets the right module access and post-login
+// redirect with no other code changes.
+//
+// `password` is only the ONE-TIME initial password — it's bcrypt-hashed by
+// User's pre('save') hook the moment this runs (same hook every other
+// password path uses), never stored or logged in plaintext. Give each user
+// their password out-of-band and have them change it from Settings, or send
+// them through the Forgot Password flow instead of telling them a password
+// at all.
+//
+// How to run this safely in production:
+//   1. Set ADMIN_BOOTSTRAP_TOKEN in your production environment variables
+//      (Vercel Project Settings → Environment Variables) — a long random
+//      string, not something guessable.
+//   2. POST to /api/admin/bootstrap with header
+//      `x-bootstrap-token: <that same value>`. Any request without the
+//      exact token gets a 404 (the route hides its own existence).
+//   3. Existing emails are skipped (status: 'exists'), so it's safe to call
+//      again after adding more people to this list — it never overwrites
+//      an existing user's password or role.
+//   4. Consider unsetting ADMIN_BOOTSTRAP_TOKEN after your real team is
+//      fully seeded, so the route goes back to returning 404 for everyone.
+// ============================================================================
 const DEMO_USERS: Array<{ name: string; email: string; password: string; role: Role; phone: string }> = [
   { name: 'Aryan Mehta', email: 'admin@untitledstore.com', password: 'Admin@123', role: 'admin', phone: '9876543210' },
   { name: 'Priya Sharma', email: 'sales@untitledstore.com', password: 'Sales@123', role: 'sales', phone: '9876543211' },
