@@ -1,0 +1,77 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+
+            # Defensive PATH fix for Node installed via nvm: SSH-executed
+            # commands run in a non-interactive, non-login shell that does
+            # NOT source ~/.bashrc, so if node/npm/pm2 are only on PATH
+            # because .bashrc loads nvm, every command below would fail with
+            # "command not found" even though it works fine in an interactive
+            # SSH session. I can't check your VPS's actual Node install
+            # method from here, so this is included unconditionally — it's a
+            # safe no-op if nvm isn't installed at this path (the -s test
+            # just fails and skips it). `set +u`/`set -u` bracket the source
+            # call because nvm.sh itself isn't `set -u`-safe on some
+            # versions and would otherwise throw "unbound variable" under
+            # the strict mode enabled above.
+            export NVM_DIR="$HOME/.nvm"
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              set +u
+              \. "$NVM_DIR/nvm.sh"
+              set -u
+            fi
+
+            cd ~/apps/oms
+
+            echo "==> Fetching latest main..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "==> Installing dependencies..."
+            # Full install (not --omit=dev): next build needs typescript/
+            # tailwindcss/eslint-config-next from devDependencies to compile.
+            # They aren't needed at runtime, but nothing here prunes them —
+            # keeping this simple, at the cost of some extra node_modules
+            # disk usage on the VPS.
+            npm ci
+
+            echo "==> Building..."
+            npm run build
+
+            echo "==> Restarting PM2 process..."
+            if pm2 describe oms > /dev/null 2>&1; then
+              pm2 restart oms --update-env
+            else
+              pm2 start npm --name "oms" -- start
+            fi
+            pm2 save
+
+            echo "==> Health check..."
+            for i in $(seq 1 10); do
+              if curl -sf http://127.0.0.1:3000 > /dev/null; then
+                echo "App responded on attempt $i — deploy successful."
+                exit 0
+              fi
+              echo "Attempt $i/10: no response yet, retrying in 3s..."
+              sleep 3
+            done
+
+            echo "App did not respond on port 3000 after restart — failing deploy."
+            exit 1
