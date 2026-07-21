@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db'
 import User from '@/models/User'
-import PasswordResetToken from '@/models/PasswordResetToken'
+import OtpToken from '@/models/OtpToken'
 import { forgotPasswordSchema } from '@/validations/auth.schema'
 import { generateOtp, hashOtp } from '@/lib/otp'
 import { sendMail } from '@/lib/mailer'
@@ -39,14 +39,17 @@ export async function POST(req: NextRequest) {
 
     const user = await User.findOne({ email, isActive: true })
     if (user) {
-      // Invalidate any previous outstanding codes for this user before
-      // issuing a new one, so only the most recent OTP is ever valid.
-      await PasswordResetToken.updateMany({ user: user._id, used: false }, { used: true })
+      // Invalidate any previous outstanding password-reset codes for this
+      // user before issuing a new one, so only the most recent is ever
+      // valid. Scoped to purpose:'password_reset' so this can never
+      // invalidate a concurrently-outstanding login OTP for the same user.
+      await OtpToken.updateMany({ user: user._id, used: false, purpose: 'password_reset' }, { used: true })
 
       const otp = generateOtp()
       const otpHash = await hashOtp(otp)
-      await PasswordResetToken.create({
+      await OtpToken.create({
         user: user._id,
+        purpose: 'password_reset',
         otpHash,
         expiresAt: new Date(Date.now() + OTP_TTL_MS),
       })

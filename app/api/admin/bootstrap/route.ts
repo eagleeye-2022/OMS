@@ -25,15 +25,16 @@ export const dynamic = 'force-dynamic'
 // these addresses won't be delivered to her inbox and she won't receive
 // OTP/password-reset emails sent to them.
 //
-// `password` is only the ONE-TIME initial password — it's bcrypt-hashed by
-// User's pre('save') hook the moment this runs (same hook every other
-// password path uses), never stored or logged in plaintext by the app. It
-// IS in this source file in plaintext, though — that's the pre-existing,
-// deliberate design of this route (see git history), not something new. If
-// this repo is or ever becomes non-private, treat these 10 passwords as
-// burned the moment this file is committed and have every one of these users
-// change their password (Settings) or go through Forgot Password on first
-// login rather than keep the one assigned here.
+// `password` is bcrypt-hashed by User's pre('save') hook the moment this
+// runs (same hook every other password path uses), never stored or logged
+// in plaintext by the app. It IS in this source file in plaintext, though —
+// pre-existing, deliberate design (see git history), not something new. As
+// of 2026-07-21, login is passwordless (email + OTP — see
+// /api/auth/request-login-otp and /api/auth/verify-login-otp), so this value
+// is no longer actually usable to sign in at all; it's kept only because
+// User.password is still a required schema field. Settings' password-change
+// and the Forgot/Reset-Password flow still exist and still work, but nothing
+// in the app currently checks a user's password to authenticate them.
 //
 // How to run this safely in production:
 //   1. Set ADMIN_BOOTSTRAP_TOKEN in your production environment variables
@@ -63,6 +64,20 @@ const DEMO_USERS: Array<{ name: string; email: string; password: string; role: R
 
   { name: 'Design & Creative', email: 'bloopersdesign@gmail.com', password: 'Uf4_6bLNKp6-qUm8', role: 'creative', phone: '' },
   { name: 'Vaishnavi Shivhare (Creative - Tester)', email: 'vaishnavi.shivhare+creative@eagleeyedigital.io', password: 'Kn+5#pJ-myBk55EP', role: 'creative', phone: '' },
+
+  // QA full-access test account — THIS is the one place it's defined; edit
+  // or delete this entry (and re-run bootstrap, or just delete the User doc
+  // directly) to change or remove it later. Given role: 'admin' rather than
+  // inventing a separate "bypass all restrictions" mechanism, since 'admin'
+  // already has unrestricted access to every module (ROLE_PERMISSIONS) and
+  // is exempt from every ownership check in the app (canViewOrderDetail,
+  // applyOwnQueueVisibility, etc. — see lib/order-visibility.ts) — a second,
+  // parallel "super role" would just duplicate that guarantee through a
+  // less-audited code path for no added capability. `password` here is
+  // vestigial: login is passwordless (email+OTP) as of 2026-07-21, but
+  // User.password is still a required schema field, so a throwaway value is
+  // still needed to satisfy it.
+  { name: 'QA (Full Access Test Account)', email: 'qa@untitledstore.test', password: 'M#viw6=^jX-CNe8h', role: 'admin', phone: '' },
 ]
 
 function tokensMatch(provided: string, expected: string): boolean {

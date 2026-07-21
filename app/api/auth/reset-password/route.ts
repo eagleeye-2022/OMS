@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db'
 import User from '@/models/User'
-import PasswordResetToken from '@/models/PasswordResetToken'
+import OtpToken from '@/models/OtpToken'
 import { resetPasswordSchema } from '@/validations/auth.schema'
 import { compareOtp } from '@/lib/otp'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: NO_ACTIVE_CODE }, { status: 400 })
     }
 
-    const token = await PasswordResetToken.findOne({ user: user._id, used: false }).sort({ createdAt: -1 })
+    const token = await OtpToken.findOne({ user: user._id, used: false, purpose: 'password_reset' }).sort({ createdAt: -1 })
     if (!token) {
       return NextResponse.json({ success: false, error: NO_ACTIVE_CODE }, { status: 400 })
     }
@@ -74,8 +74,9 @@ export async function POST(req: NextRequest) {
 
     // Only one unused+unexpired token can exist per user at a time (each
     // forgot-password request invalidates the previous one), but this stays
-    // defensive in case that ever changes.
-    await PasswordResetToken.updateMany({ user: user._id, used: false }, { used: true })
+    // defensive in case that ever changes. Scoped to purpose:'password_reset'
+    // so this never touches an unrelated outstanding login OTP.
+    await OtpToken.updateMany({ user: user._id, used: false, purpose: 'password_reset' }, { used: true })
 
     return NextResponse.json({ success: true, message: 'Password updated successfully' })
   } catch (err) {

@@ -1,11 +1,19 @@
 import { z } from 'zod'
 
-export const loginSchema = z.object({
+// Login is passwordless (email + OTP only, since 2026-07-21) — these two
+// schemas back /api/auth/request-login-otp and /api/auth/verify-login-otp.
+// Kept as their own named schemas (rather than reusing forgotPasswordSchema/
+// verifyOtpSchema below, which are byte-identical in shape) so each route's
+// import makes its purpose obvious and the login and password-reset flows
+// can't be confused for one another at a glance.
+export const requestLoginOtpSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
 })
 
-export type LoginInput = z.infer<typeof loginSchema>
+export const verifyLoginOtpSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  otp: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code'),
+})
 
 export const forgotPasswordSchema = z.object({
   email: z.string().email('Invalid email address'),

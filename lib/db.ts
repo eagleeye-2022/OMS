@@ -20,7 +20,7 @@ import '@/models/ActivityLog'
 import '@/models/Notification'
 import '@/models/Product'
 import '@/models/Inventory'
-import '@/models/PasswordResetToken'
+import '@/models/OtpToken'
 
 interface MongooseCache {
   conn: typeof mongoose | null
