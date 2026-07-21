@@ -2,12 +2,10 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken, SESSION_COOKIE } from '@/lib/auth'
 
-// Login itself no longer happens here — it's passwordless, two-step email +
-// OTP now (see /api/auth/request-login-otp and /api/auth/verify-login-otp,
-// the latter of which mints the same session cookie this route used to mint
-// on a successful password check). This route keeps only session read
-// (GET, polled by useAuth()) and logout (DELETE) — both OTP-agnostic, since
-// a session cookie looks the same regardless of how it was obtained.
+// Login itself doesn't happen here — the app is passwordless, two-step
+// email + OTP (see /api/auth/request-login-otp and
+// /api/auth/verify-login-otp, which mints the session cookie). This route
+// only reads the session (GET, polled by useAuth()) and logs out (DELETE).
 export async function GET() {
   const cookieStore = await cookies()
   const token = cookieStore.get(SESSION_COOKIE)?.value

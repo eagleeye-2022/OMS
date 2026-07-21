@@ -46,12 +46,10 @@ async function sendViaSmtp(smtp: SmtpConfig, from: string, message: MailMessage)
 
 /**
  * Sends transactional email (OTP codes today, reusable for any future
- * notification). Deliberately never throws: callers like forgot-password
- * must return the exact same response whether or not the email really got
- * delivered — if a provider outage turned into a thrown error there, a 500
- * vs 200 response would let an attacker distinguish "this account exists
- * but mail failed" from "this account doesn't exist", reopening the
- * enumeration hole that route is built to avoid.
+ * notification). Deliberately never throws: a provider outage turning into
+ * a thrown error would surface as a 500 instead of the caller's normal
+ * response, which for an auth-adjacent endpoint could leak information
+ * through the difference. Callers log delivery failures themselves instead.
  */
 export async function sendMail(message: MailMessage): Promise<void> {
   const config = getMailConfig()

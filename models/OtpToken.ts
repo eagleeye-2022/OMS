@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, model, models, Types } from 'mongoose'
 
-export type OtpPurpose = 'login' | 'password_reset'
+export type OtpPurpose = 'login'
 
 export interface IOtpTokenDocument extends Document {
   user: Types.ObjectId
@@ -14,14 +14,10 @@ export interface IOtpTokenDocument extends Document {
 const OtpTokenSchema = new Schema<IOtpTokenDocument>(
   {
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    // Scopes a code to the single flow it was issued for. Login and
-    // password-reset share this exact same generate/hash/verify mechanism
-    // (formerly two copies of the same model, one per flow), so without this
-    // field a code requested to log in could also be spent to reset a
-    // password, or vice versa — two different security actions silently
-    // sharing one proof-of-inbox-access token. Every query against this
-    // model must filter by purpose; see the routes under app/api/auth/.
-    purpose: { type: String, enum: ['login', 'password_reset'], required: true },
+    // The app has only one OTP flow (login), but every query still filters
+    // by purpose so a second flow could be added later without silently
+    // accepting a code issued for a different purpose. See app/api/auth/.
+    purpose: { type: String, enum: ['login'], required: true },
     otpHash: { type: String, required: true },
     expiresAt: { type: Date, required: true },
     used: { type: Boolean, default: false },

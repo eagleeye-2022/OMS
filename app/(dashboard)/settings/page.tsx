@@ -17,10 +17,10 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function SettingsPage() {
   const { user } = useAuthContext()
   const [profile, setProfile] = useState({ name: user?.name || '', email: user?.email || '' })
-  const [password, setPassword] = useState({ current: '', next: '', confirm: '' })
   const [business, setBusiness] = useState({ storeName: 'The Untitled Store', gst: '', address: '', phone: '', website: '' })
   const [saving, setSaving] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const isDev = process.env.NODE_ENV !== 'production'
 
   const showMsg = (type: 'success' | 'error', text: string) => {
     setMsg({ type, text })
@@ -37,22 +37,6 @@ export default function SettingsPage() {
       })
       const d = await res.json()
       if (d.success) showMsg('success', 'Profile updated.')
-      else showMsg('error', d.error || 'Failed')
-    } catch { showMsg('error', 'Network error') } finally { setSaving(null) }
-  }
-
-  const savePassword = async () => {
-    if (password.next !== password.confirm) { showMsg('error', 'Passwords do not match.'); return }
-    if (password.next.length < 6) { showMsg('error', 'Password must be at least 6 characters.'); return }
-    setSaving('password')
-    try {
-      const res = await fetch(`/api/users/${user?.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword: password.current, password: password.next }),
-      })
-      const d = await res.json()
-      if (d.success) { showMsg('success', 'Password changed.'); setPassword({ current: '', next: '', confirm: '' }) }
       else showMsg('error', d.error || 'Failed')
     } catch { showMsg('error', 'Network error') } finally { setSaving(null) }
   }
@@ -94,17 +78,6 @@ export default function SettingsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Change Password">
-        <div className="space-y-4">
-          <Input label="Current Password" type="password" value={password.current} onChange={e => setPassword(p => ({ ...p, current: e.target.value }))} />
-          <Input label="New Password" type="password" value={password.next} onChange={e => setPassword(p => ({ ...p, next: e.target.value }))} />
-          <Input label="Confirm New Password" type="password" value={password.confirm} onChange={e => setPassword(p => ({ ...p, confirm: e.target.value }))} />
-          <div className="flex justify-end">
-            <Button onClick={savePassword} loading={saving === 'password'} size="sm">Change Password</Button>
-          </div>
-        </div>
-      </SectionCard>
-
       <SectionCard title="Business Information">
         <div className="space-y-4">
           <Input label="Store Name" value={business.storeName} onChange={e => setBusiness(b => ({ ...b, storeName: e.target.value }))} />
@@ -118,26 +91,27 @@ export default function SettingsPage() {
         </div>
       </SectionCard>
 
-      <SectionCard title="Demo & Development">
-        <div className="space-y-3">
-          <p className="text-sm text-gray-600">
-            Seed the database with realistic demo data — 6 users, 12 clients, 15 orders at various stages, payments, shipments, and notifications.
-          </p>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <p className="text-xs text-amber-700 font-medium">Warning: This will clear all existing data and replace it with demo data.</p>
+      {isDev && (
+        <SectionCard title="Demo & Development">
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">
+              Seed the database with realistic demo data — 5 users, 12 clients, 15 orders at various stages, payments, shipments, and notifications.
+            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-xs text-amber-700 font-medium">Warning: This will clear all existing data and replace it with demo data. Dev-only — disabled in production.</p>
+            </div>
+            <div className="text-xs text-gray-500 space-y-1">
+              <p>Demo accounts after seeding (log in via email + OTP, no password):</p>
+              <p className="font-mono">admin@untitledstore.com</p>
+              <p className="font-mono">sales@untitledstore.com</p>
+              <p className="font-mono">creative@untitledstore.com</p>
+              <p className="font-mono">operations@untitledstore.com</p>
+              <p className="font-mono">accounting@untitledstore.com</p>
+            </div>
+            <Button variant="outline" onClick={seedData} loading={saving === 'seed'} size="sm">Seed Demo Data</Button>
           </div>
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>Demo credentials after seeding:</p>
-            <p className="font-mono">admin@untitledstore.com / Admin@123</p>
-            <p className="font-mono">sales@untitledstore.com / Sales@123</p>
-            <p className="font-mono">creative@untitledstore.com / Creative@123</p>
-            <p className="font-mono">production@untitledstore.com / Prod@123</p>
-            <p className="font-mono">shipping@untitledstore.com / Ship@123</p>
-            <p className="font-mono">accounts@untitledstore.com / Acc@123</p>
-          </div>
-          <Button variant="outline" onClick={seedData} loading={saving === 'seed'} size="sm">Seed Demo Data</Button>
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
     </div>
   )
 }

@@ -206,8 +206,8 @@ export const NOTIFICATION_TYPE = {
 // list — those are Shipping/Accounts-module rights riding the shared
 // endpoint, not Orders-module rights.
 // 'settings' is granted to every role, not just admin — it's the self-service
-// profile/password page (see app/(dashboard)/settings/), so it's appended to
-// every list below rather than gating it like the operational modules above.
+// profile page (see app/(dashboard)/settings/), so it's appended to every
+// list below rather than gating it like the operational modules above.
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   admin: ['dashboard', 'clients', 'orders', 'creative-queue', 'production', 'accounts', 'shipping', 'user-roles', 'settings'],
   sales: ['clients', 'orders', 'shipping', 'settings'],

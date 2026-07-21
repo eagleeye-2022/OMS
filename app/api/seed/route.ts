@@ -37,13 +37,15 @@ export async function POST() {
     // 5-role taxonomy (admin/sales/creative/operations/accounting) — matches
     // lib/constants.ts's ROLES since 2026-07-21, when 'production' and
     // 'shipping' were merged into one 'operations' role and 'accounts' was
-    // renamed 'accounting'.
+    // renamed 'accounting'. No passwords — login is email + OTP only, so
+    // logging in as any of these in dev just means requesting a code (see
+    // console output, since local dev has no SMTP configured by default).
     const users = await User.create([
-      { name: 'Aryan Mehta', email: 'admin@untitledstore.com', password: 'Admin@123', role: 'admin', phone: '9876543210', isActive: true },
-      { name: 'Priya Sharma', email: 'sales@untitledstore.com', password: 'Sales@123', role: 'sales', phone: '9876543211', isActive: true },
-      { name: 'Vaishnavi Shivhare', email: 'creative@untitledstore.com', password: 'Creative@123', role: 'creative', phone: '9876543212', isActive: true },
-      { name: 'Rahul Verma', email: 'operations@untitledstore.com', password: 'Ops@123', role: 'operations', phone: '9876543213', isActive: true },
-      { name: 'Neha Gupta', email: 'accounting@untitledstore.com', password: 'Acc@123', role: 'accounting', phone: '9876543215', isActive: true },
+      { name: 'Aryan Mehta', email: 'admin@untitledstore.com', role: 'admin', phone: '9876543210', isActive: true },
+      { name: 'Priya Sharma', email: 'sales@untitledstore.com', role: 'sales', phone: '9876543211', isActive: true },
+      { name: 'Vaishnavi Shivhare', email: 'creative@untitledstore.com', role: 'creative', phone: '9876543212', isActive: true },
+      { name: 'Rahul Verma', email: 'operations@untitledstore.com', role: 'operations', phone: '9876543213', isActive: true },
+      { name: 'Neha Gupta', email: 'accounting@untitledstore.com', role: 'accounting', phone: '9876543215', isActive: true },
     ])
 
     const adminUser = users[0]
@@ -486,20 +488,20 @@ export async function POST() {
 
 export async function GET() {
   if (process.env.NODE_ENV === 'production') {
-    // This previously returned the demo credentials to anyone, unauthenticated,
-    // in every environment including production — fixed to respect the same
-    // production guard as POST instead of leaking passwords publicly.
+    // Respects the same production guard as POST — this route (and the
+    // demo accounts it describes) doesn't exist in production.
     return NextResponse.json({ success: false, error: 'Seed is disabled in production' }, { status: 403 })
   }
 
   return NextResponse.json({
     message: 'POST to this endpoint to seed the database',
-    credentials: {
-      admin: { email: 'admin@untitledstore.com', password: 'Admin@123' },
-      sales: { email: 'sales@untitledstore.com', password: 'Sales@123' },
-      creative: { email: 'creative@untitledstore.com', password: 'Creative@123' },
-      operations: { email: 'operations@untitledstore.com', password: 'Ops@123' },
-      accounting: { email: 'accounting@untitledstore.com', password: 'Acc@123' },
+    demoAccounts: {
+      note: 'No passwords — log in at /login with email + OTP. Local dev prints the code to the console if SMTP is not configured.',
+      admin: 'admin@untitledstore.com',
+      sales: 'sales@untitledstore.com',
+      creative: 'creative@untitledstore.com',
+      operations: 'operations@untitledstore.com',
+      accounting: 'accounting@untitledstore.com',
     },
   })
 }

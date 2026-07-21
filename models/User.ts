@@ -1,22 +1,23 @@
 import mongoose, { Schema, Document, model, models } from 'mongoose'
-import bcrypt from 'bcryptjs'
 import type { Role } from '@/lib/constants'
 
 export interface IUserDocument extends Document {
   name: string
   email: string
-  password: string
   role: Role
   phone?: string
   isActive: boolean
-  comparePassword(candidate: string): Promise<boolean>
 }
 
+// No password field — login is passwordless (email + OTP only; see
+// /api/auth/request-login-otp and /api/auth/verify-login-otp). A user's
+// ability to log in is governed entirely by `isActive` plus having an
+// account with a matching email; nothing here is ever checked against a
+// credential.
 const UserSchema = new Schema<IUserDocument>(
   {
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, select: false },
     role: {
       type: String,
       enum: ['admin', 'sales', 'creative', 'operations', 'accounting'],
@@ -27,16 +28,6 @@ const UserSchema = new Schema<IUserDocument>(
   },
   { timestamps: true }
 )
-
-UserSchema.pre('save', async function () {
-  if (!this.isModified('password')) return
-  const salt = await bcrypt.genSalt(10)
-  this.password = await bcrypt.hash(this.password, salt)
-})
-
-UserSchema.methods.comparePassword = async function (candidate: string): Promise<boolean> {
-  return bcrypt.compare(candidate, this.password)
-}
 
 const User = models.User || model<IUserDocument>('User', UserSchema)
 export default User

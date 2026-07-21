@@ -49,7 +49,6 @@ function UserFormModal({ user, onSave, onClose }: { user?: IUser | null; onSave:
     name: user?.name || '',
     email: user?.email || '',
     role: user?.role || 'sales',
-    password: '',
     isActive: user?.isActive !== false,
   })
   const [saving, setSaving] = useState(false)
@@ -64,9 +63,7 @@ function UserFormModal({ user, onSave, onClose }: { user?: IUser | null; onSave:
     try {
       const url = isEdit ? `/api/users/${user!._id}` : '/api/users'
       const method = isEdit ? 'PUT' : 'POST'
-      const body = isEdit
-        ? { name: form.name, role: form.role, isActive: form.isActive, ...(form.password ? { password: form.password } : {}) }
-        : form
+      const body = isEdit ? { name: form.name, role: form.role, isActive: form.isActive } : form
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json()
       if (data.success) onSave()
@@ -80,8 +77,11 @@ function UserFormModal({ user, onSave, onClose }: { user?: IUser | null; onSave:
       {!isEdit && <Input label="Email *" type="email" value={form.email} onChange={e => set('email', e.target.value)} required />}
       <Select label="Role *" value={form.role} onChange={e => set('role', e.target.value)} required
         options={ROLES.map(r => ({ value: r, label: r.charAt(0).toUpperCase() + r.slice(1) }))} />
-      <Input label={isEdit ? 'New Password (leave blank to keep)' : 'Password *'} type="password" value={form.password}
-        onChange={e => set('password', e.target.value)} required={!isEdit} minLength={6} />
+      {!isEdit && (
+        <p className="text-xs text-gray-500 -mt-2">
+          No password needed — this person logs in with a one-time code sent to their email.
+        </p>
+      )}
       {isEdit && (
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input type="checkbox" checked={form.isActive} onChange={e => set('isActive', e.target.checked)} className="rounded" />

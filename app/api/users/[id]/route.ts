@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
 import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import User from '@/models/User'
 import { userSchema } from '@/validations/user.schema'
 
-// Schema for admin updating another user — password excluded (use dedicated flow)
-const adminUpdateSchema = userSchema.omit({ password: true }).partial()
+// Schema for admin updating another user
+const adminUpdateSchema = userSchema.partial()
 
 function handleMongoError(err: unknown): NextResponse | null {
   const e = err as { code?: number; name?: string; message?: string }
@@ -27,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }
     const { id } = await params
     await connectDB()
-    const user = await User.findById(id).select('-password').lean()
+    const user = await User.findById(id).lean()
     if (!user) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 })
     return NextResponse.json({ success: true, data: user })
   } catch (err) {
@@ -51,76 +50,26 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json()
     await connectDB()
 
-    // ── Password change path: uses .save() to trigger pre-save bcrypt hook ──
-    if (body.password) {
-      const userDoc = await User.findById(id).select('+password')
-      if (!userDoc) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 })
-
-      // Self-update requires current password verification
-      if (isSelf) {
-        if (!body.currentPassword) {
-          return NextResponse.json({ success: false, error: 'Current password is required' }, { status: 400 })
-        }
-        const ok = await userDoc.comparePassword(body.currentPassword)
-        if (!ok) {
-          return NextResponse.json({ success: false, error: 'Current password is incorrect' }, { status: 400 })
-        }
-      }
-
-      const pwSchema = z.string().min(6, 'Password must be at least 6 characters')
-      const pwParsed = pwSchema.safeParse(body.password)
-      if (!pwParsed.success) {
-        return NextResponse.json({ success: false, error: pwParsed.error.issues[0].message }, { status: 400 })
-      }
-
-      // Apply allowed fields for each actor
-      if (isSelf && session.role !== 'admin') {
-        // Non-admin self: name + password only
-        if (body.name && typeof body.name === 'string') userDoc.name = body.name.trim()
-      } else if (session.role === 'admin') {
-        // Admin: can update role, isActive, name, email alongside password
-        const parsed = adminUpdateSchema.safeParse(body)
-        if (!parsed.success) {
-          return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
-        }
-        if (parsed.data.name !== undefined) userDoc.name = parsed.data.name
-        if (parsed.data.email !== undefined) userDoc.email = parsed.data.email
-        if (parsed.data.role !== undefined) userDoc.role = parsed.data.role
-        if (parsed.data.phone !== undefined) userDoc.phone = parsed.data.phone
-        if (typeof parsed.data.isActive === 'boolean') userDoc.isActive = parsed.data.isActive
-      }
-
-      userDoc.password = pwParsed.data
-      await userDoc.save()
-
-      const saved = await User.findById(id).select('-password').lean()
-      return NextResponse.json({ success: true, data: saved })
-    }
-
-    // ── Non-password update path ──────────────────────────────────────────────
     if (isSelf && session.role !== 'admin') {
-      // Non-admin self: name only
-      const selfSchema = z.object({ name: z.string().min(2, 'Name must be at least 2 characters') })
+      // Non-admin self: name only — nothing else about a session user's own
+      // account is self-editable.
+      const selfSchema = userSchema.pick({ name: true }).required()
       const parsed = selfSchema.safeParse(body)
       if (!parsed.success) {
         return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
       }
-      const user = await User.findByIdAndUpdate(id, { name: parsed.data.name }, { new: true, runValidators: true })
-        .select('-password')
-        .lean()
+      const user = await User.findByIdAndUpdate(id, { name: parsed.data.name }, { new: true, runValidators: true }).lean()
       if (!user) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 })
       return NextResponse.json({ success: true, data: user })
     }
 
-    // Admin updating another user (no password change)
+    // Admin updating any user (including themselves)
     const parsed = adminUpdateSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
     }
 
-    const user = await User.findByIdAndUpdate(id, parsed.data, { new: true, runValidators: true })
-      .select('-password')
-      .lean()
+    const user = await User.findByIdAndUpdate(id, parsed.data, { new: true, runValidators: true }).lean()
     if (!user) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 })
     return NextResponse.json({ success: true, data: user })
   } catch (err) {

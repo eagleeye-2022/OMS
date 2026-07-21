@@ -51,9 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Invalidate any previous outstanding login codes for this user before
-    // issuing a new one, so only the most recent OTP is ever valid. Scoped
-    // to purpose:'login' so this never touches an unrelated outstanding
-    // password-reset code for the same user.
+    // issuing a new one, so only the most recent OTP is ever valid.
     await OtpToken.updateMany({ user: user._id, used: false, purpose: 'login' }, { used: true })
 
     const otp = generateOtp()

@@ -7,8 +7,8 @@ import type { Role } from '@/lib/constants'
 export const dynamic = 'force-dynamic'
 
 // ============================================================================
-// PRODUCTION ROLE → EMAIL MAPPING — set 2026-07-21. `role` must be one of the
-// Role values in lib/constants.ts (admin, sales, creative, operations,
+// PRODUCTION ROLE → EMAIL MAPPING — updated 2026-07-21. `role` must be one of
+// the Role values in lib/constants.ts (admin, sales, creative, operations,
 // accounting) — that's the single source of truth ROLE_PERMISSIONS/
 // ROLE_DEFAULT_REDIRECT read from, so any role assigned here automatically
 // gets the right module access and post-login redirect with no other code
@@ -16,68 +16,36 @@ export const dynamic = 'force-dynamic'
 // Shipping/dispatch queue (merged from the former separate 'production' and
 // 'shipping' roles).
 //
-// Vaishnavi's 5 "-tester" entries use Gmail/Google-Workspace-style '+'
-// sub-addressing (vaishnavi.shivhare+role@eagleeyedigital.io) so one real
-// inbox can hold 5 distinct logins, one per role — the User.email field is
-// unique, so the same literal address cannot back 5 separate accounts.
-// CONFIRM eagleeyedigital.io actually supports '+' addressing (standard on
-// Google Workspace/Gmail) before relying on this — if it doesn't, mail to
-// these addresses won't be delivered to her inbox and she won't receive
-// OTP/password-reset emails sent to them.
+// No password field — login is passwordless (email + OTP only; see
+// /api/auth/request-login-otp and /api/auth/verify-login-otp). Creating a
+// user here only grants them the ability to request a login code for this
+// exact email address; there is no credential to set or leak.
 //
-// `password` is bcrypt-hashed by User's pre('save') hook the moment this
-// runs (same hook every other password path uses), never stored or logged
-// in plaintext by the app. It IS in this source file in plaintext, though —
-// pre-existing, deliberate design (see git history), not something new. As
-// of 2026-07-21, login is passwordless (email + OTP — see
-// /api/auth/request-login-otp and /api/auth/verify-login-otp), so this value
-// is no longer actually usable to sign in at all; it's kept only because
-// User.password is still a required schema field. Settings' password-change
-// and the Forgot/Reset-Password flow still exist and still work, but nothing
-// in the app currently checks a user's password to authenticate them.
+// Vaishnavi's and Ishita's tester accounts are each a single real inbox
+// (vaishnavi.shivhare@eagleeyedigital.io / ishita.vishwakarma@eagleeyedigital.io)
+// with the 'admin' role, so each can exercise every module in one login
+// rather than juggling separate per-role sub-addressed accounts.
 //
 // How to run this safely in production:
-//   1. Set ADMIN_BOOTSTRAP_TOKEN in your production environment variables
-//      (Vercel Project Settings → Environment Variables) — a long random
-//      string, not something guessable.
+//   1. Set ADMIN_BOOTSTRAP_TOKEN in your production environment variables —
+//      a long random string, not something guessable.
 //   2. POST to /api/admin/bootstrap with header
 //      `x-bootstrap-token: <that same value>`. Any request without the
 //      exact token gets a 404 (the route hides its own existence).
 //   3. Existing emails are skipped (status: 'exists'), so it's safe to call
-//      again after adding more people to this list — it never overwrites
-//      an existing user's password or role.
+//      again after adding more people to this list — it never overwrites an
+//      existing user's role.
 //   4. Consider unsetting ADMIN_BOOTSTRAP_TOKEN after your real team is
 //      fully seeded, so the route goes back to returning 404 for everyone.
 // ============================================================================
-const DEMO_USERS: Array<{ name: string; email: string; password: string; role: Role; phone: string }> = [
-  { name: 'Admin', email: 'bloopersstore@gmail.com', password: 'WuMsa5cst2=*c*!+', role: 'admin', phone: '' },
-  { name: 'Vaishnavi Shivhare (Admin - Tester)', email: 'vaishnavi.shivhare+admin@eagleeyedigital.io', password: 'K+W3fnpn6DeE^MKS', role: 'admin', phone: '' },
-
-  { name: 'Operations', email: 'ordersbloopers@gmail.com', password: 'C8u5YeC#7Fr9Jm!U', role: 'operations', phone: '' },
-  { name: 'Vaishnavi Shivhare (Operations - Tester)', email: 'vaishnavi.shivhare+operations@eagleeyedigital.io', password: 'Rcn7x=hn^BWu6v!_', role: 'operations', phone: '' },
-
-  { name: 'Sales', email: 'officialbloopersstore@gmail.com', password: 'Bge6sZ&7ZwV2U3@h', role: 'sales', phone: '' },
-  { name: 'Vaishnavi Shivhare (Sales - Tester)', email: 'vaishnavi.shivhare+sales@eagleeyedigital.io', password: 'My5k%NM=yJixsR3d', role: 'sales', phone: '' },
-
-  { name: 'Accounting', email: 'accounts@bloopersstore.in', password: 'z=jWStB8Ft8V-c7m', role: 'accounting', phone: '' },
-  { name: 'Vaishnavi Shivhare (Accounting - Tester)', email: 'vaishnavi.shivhare+accounting@eagleeyedigital.io', password: 'Gca8w*_A7zN362Z#', role: 'accounting', phone: '' },
-
-  { name: 'Design & Creative', email: 'bloopersdesign@gmail.com', password: 'Uf4_6bLNKp6-qUm8', role: 'creative', phone: '' },
-  { name: 'Vaishnavi Shivhare (Creative - Tester)', email: 'vaishnavi.shivhare+creative@eagleeyedigital.io', password: 'Kn+5#pJ-myBk55EP', role: 'creative', phone: '' },
-
-  // QA full-access test account — THIS is the one place it's defined; edit
-  // or delete this entry (and re-run bootstrap, or just delete the User doc
-  // directly) to change or remove it later. Given role: 'admin' rather than
-  // inventing a separate "bypass all restrictions" mechanism, since 'admin'
-  // already has unrestricted access to every module (ROLE_PERMISSIONS) and
-  // is exempt from every ownership check in the app (canViewOrderDetail,
-  // applyOwnQueueVisibility, etc. — see lib/order-visibility.ts) — a second,
-  // parallel "super role" would just duplicate that guarantee through a
-  // less-audited code path for no added capability. `password` here is
-  // vestigial: login is passwordless (email+OTP) as of 2026-07-21, but
-  // User.password is still a required schema field, so a throwaway value is
-  // still needed to satisfy it.
-  { name: 'QA (Full Access Test Account)', email: 'qa@untitledstore.test', password: 'M#viw6=^jX-CNe8h', role: 'admin', phone: '' },
+const DEMO_USERS: Array<{ name: string; email: string; role: Role; phone: string }> = [
+  { name: 'Admin', email: 'bloopersstore@gmail.com', role: 'admin', phone: '' },
+  { name: 'Operations', email: 'ordersbloopers@gmail.com', role: 'operations', phone: '' },
+  { name: 'Sales', email: 'officialbloopersstore@gmail.com', role: 'sales', phone: '' },
+  { name: 'Accounting', email: 'accounts@bloopersstore.in', role: 'accounting', phone: '' },
+  { name: 'Design & Creative', email: 'bloopersdesign@gmail.com', role: 'creative', phone: '' },
+  { name: 'Vaishnavi Shivhare (Tester)', email: 'vaishnavi.shivhare@eagleeyedigital.io', role: 'admin', phone: '' },
+  { name: 'Ishita Vishwakarma (Tester)', email: 'ishita.vishwakarma@eagleeyedigital.io', role: 'admin', phone: '' },
 ]
 
 function tokensMatch(provided: string, expected: string): boolean {
@@ -125,12 +93,9 @@ export async function POST(req: NextRequest) {
         results.push({ email: u.email, role: u.role, status: 'exists' })
         continue
       }
-      // User.create() runs the schema's pre('save') hook, so the password
-      // is bcrypt-hashed exactly like every other user-creation path.
       await User.create({
         name: u.name,
         email: u.email,
-        password: u.password,
         role: u.role,
         phone: u.phone,
         isActive: true,

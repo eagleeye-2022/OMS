@@ -17,11 +17,9 @@ const EXPIRED = 'This code has expired. Please request a new one.'
 const LOCKED_OUT = 'Too many incorrect attempts. Please request a new code.'
 
 /**
- * Terminal step of passwordless login — unlike /api/auth/verify-otp (the
- * password-reset sibling, which only gives pass/fail feedback and leaves the
- * actual token-spend to /api/auth/reset-password), this endpoint both
- * validates the code AND mints the session in one call, since login has no
- * further step after OTP verification.
+ * Terminal step of passwordless login — validates the code AND mints the
+ * session in one call, since this app's only auth flow is email + OTP with
+ * no further step after verification.
  */
 export async function POST(req: NextRequest) {
   let body: { email?: string; otp?: string }
