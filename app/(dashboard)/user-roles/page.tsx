@@ -13,15 +13,14 @@ import { formatDate } from '@/lib/utils'
 import { ROLE_PERMISSIONS } from '@/lib/constants'
 import type { IUser, Role } from '@/types'
 
-const ROLES: Role[] = ['admin', 'sales', 'creative', 'production', 'shipping', 'accounts']
+const ROLES: Role[] = ['admin', 'sales', 'creative', 'operations', 'accounting']
 
 const ROLE_COLOR: Record<Role, string> = {
   admin: 'bg-red-100 text-red-700',
   sales: 'bg-blue-100 text-blue-700',
   creative: 'bg-purple-100 text-purple-700',
-  production: 'bg-amber-100 text-amber-700',
-  shipping: 'bg-teal-100 text-teal-700',
-  accounts: 'bg-green-100 text-green-700',
+  operations: 'bg-amber-100 text-amber-700',
+  accounting: 'bg-green-100 text-green-700',
 }
 
 const MODULE_LABEL: Record<string, string> = {

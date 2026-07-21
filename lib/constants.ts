@@ -2,9 +2,8 @@ export const ROLES = {
   ADMIN: 'admin',
   SALES: 'sales',
   CREATIVE: 'creative',
-  PRODUCTION: 'production',
-  SHIPPING: 'shipping',
-  ACCOUNTS: 'accounts',
+  OPERATIONS: 'operations',
+  ACCOUNTING: 'accounting',
 } as const
 
 export type Role = (typeof ROLES)[keyof typeof ROLES]
@@ -169,29 +168,41 @@ export const NOTIFICATION_TYPE = {
   GENERAL: 'general',
 } as const
 
-// Final confirmed module access matrix (audited):
+// Final confirmed module access matrix (audited; updated 2026-07-21 when the
+// role taxonomy was consolidated from 6 roles to 5 — 'production' and
+// 'shipping' were merged into one 'operations' role, and 'accounts' was
+// renamed 'accounting'. Module/route keys below ('production', 'shipping',
+// 'accounts', ...) are NOT role names — they're the existing page/module
+// identifiers (routes stay /production, /shipping, /accounts unchanged) and
+// deliberately were not renamed just because a role name changed):
 //   Dashboard:      admin only
-//   Clients:        admin, sales only (accounts explicitly excluded — no view/edit)
+//   Clients:        admin, sales only (accounting explicitly excluded — no view/edit)
 //   Orders:         admin, sales only
 //   Creative Queue: admin, creative
-//   Production:     admin, production
-//   Shipping:       admin, sales, accounts, shipping — the 'shipping' role
-//                   gets view access to its own module (see CAN_VIEW_SHIPPING/
-//                   CAN_VIEW_CLIENT_DETAILS in lib/order-visibility.ts, which
-//                   must include it too or the module renders with courier/
-//                   tracking/delivery-address fields silently stripped).
-//                   Write actions (courier assignment, status transitions,
-//                   marking delivered) remain admin/sales/accounts-only —
-//                   that's a separate, deliberate business rule this role
-//                   change does not touch.
-//   Accounts:       admin, accounts
+//   Production:     admin, operations
+//   Shipping:       admin, sales, accounting, operations — full read+write
+//                   for all four as of 2026-07-21 (operations gained write
+//                   access; previously it was view-only, matching the old
+//                   'shipping' role). Write here means courier assignment
+//                   and in_transit/delayed status updates (canEditShipping
+//                   in the Shipping page components; courierPartner PUT
+//                   intent + ROLE_ALLOWED_STATUSES in lib/order-status.ts).
+//                   "Mark as Delivered" is a separate, harder rule: admin
+//                   only, for all roles including operations — gated by
+//                   `isAdmin` alone in ShippingStatusActionsCard, not by
+//                   canEditShipping, and untouched by this change.
+//                   CAN_VIEW_SHIPPING/CAN_VIEW_CLIENT_DETAILS in
+//                   lib/order-visibility.ts must include every role listed
+//                   above or the module renders with courier/tracking/
+//                   delivery-address fields silently stripped.
+//   Accounts:       admin, accounting
 //
-// Important: accounts does NOT get the generic Orders module/sidebar/page.
+// Important: accounting does NOT get the generic Orders module/sidebar/page.
 // It still legitimately touches order data through the Shipping and
 // Accounts workflows on the shared Order API — CAN_VIEW_FINANCE and
 // CAN_VIEW_SHIPPING (lib/order-visibility.ts), the courierPartner PUT
-// intent, and ROLE_ALLOWED_STATUSES.accounts (lib/order-status.ts) all
-// correctly include accounts and must NOT be removed when reconciling this
+// intent, and ROLE_ALLOWED_STATUSES.accounting (lib/order-status.ts) all
+// correctly include accounting and must NOT be removed when reconciling this
 // list — those are Shipping/Accounts-module rights riding the shared
 // endpoint, not Orders-module rights.
 // 'settings' is granted to every role, not just admin — it's the self-service
@@ -201,22 +212,22 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   admin: ['dashboard', 'clients', 'orders', 'creative-queue', 'production', 'accounts', 'shipping', 'user-roles', 'settings'],
   sales: ['clients', 'orders', 'shipping', 'settings'],
   creative: ['creative-queue', 'settings'],
-  production: ['production', 'settings'],
-  shipping: ['shipping', 'settings'],
-  accounts: ['accounts', 'shipping', 'settings'],
+  operations: ['production', 'shipping', 'settings'],
+  accounting: ['accounts', 'shipping', 'settings'],
 }
 
-// The 'shipping' role now lands on its own module (see ROLE_PERMISSIONS
-// above). '/no-access' remains a dedicated, guard-free landing page for any
-// role configured with zero assigned modules — none currently, but kept for
-// roles added in the future without a module wired up yet.
+// 'operations' (the merged production+shipping role) defaults to the
+// Production floor queue — change to '/shipping' if the business wants
+// Operations logins to land on the dispatch queue instead. '/no-access'
+// remains a dedicated, guard-free landing page for any role configured with
+// zero assigned modules — none currently, but kept for roles added in the
+// future without a module wired up yet.
 export const ROLE_DEFAULT_REDIRECT: Record<Role, string> = {
   admin: '/',
   sales: '/clients',
   creative: '/creative-queue',
-  production: '/production',
-  shipping: '/shipping',
-  accounts: '/accounts',
+  operations: '/production',
+  accounting: '/accounts',
 }
 
 export const NOTE_TYPE = {
@@ -240,17 +251,17 @@ export const NOTE_TYPE_LABEL: Record<NoteType, string> = {
 // Which note domains each role may read AND write — order notes are fully
 // siloed by domain (not just relabeled views of one shared thread anymore).
 // Mirrors the module access matrix above: a role only sees/creates notes
-// tagged for its own domain, except admin (all domains). Note the 'shipping'
-// NOTE TYPE (used by admin/sales/accounts for Shipping-module remarks) is a
-// different thing from the 'shipping' ROLE, which has zero module access
-// under the final matrix and correspondingly gets no note domain either.
+// tagged for its own domain, except admin (all domains). 'operations'
+// inherits exactly the union of its two former roles: the old 'production'
+// role's ['production'] domain plus the old 'shipping' role's empty domain
+// list — so operations still can't write 'shipping'-domain notes, same as
+// before this merge.
 export const NOTE_TYPE_ACCESS: Record<Role, NoteType[]> = {
   admin: ['general', 'creative', 'production', 'shipping', 'accounts'],
   sales: ['general'],
   creative: ['creative'],
-  production: ['production'],
-  shipping: [],
-  accounts: ['accounts'],
+  operations: ['production'],
+  accounting: ['accounts'],
 }
 
 // Coarse "what should Production do right now" state for a given order,
@@ -300,7 +311,7 @@ export function getProductionWorkflowState(status: OrderStatus): ProductionWorkf
  * production-complete write guards (app/api/orders/[id]/route.ts and
  * production-complete/route.ts) and the Production UI (ProductionDetailPage),
  * so the UI never offers an action the API would reject. Admin is never
- * blocked by this — callers gate on role themselves (`role === 'production'`)
+ * blocked by this — callers gate on role themselves (`role === 'operations'`)
  * before consulting it, consistent with every other role-gated intent here.
  */
 export function getProductionBlockReason(status: OrderStatus): string | null {

@@ -163,13 +163,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // ── Intent: Production Stage Update ──────────────────────────────────────
     // Triggered by presence of productionStage. Allowed for: admin, production.
     if ('productionStage' in body) {
-      if (role !== 'admin' && role !== 'production') {
+      if (role !== 'admin' && role !== 'operations') {
         return NextResponse.json(
           { success: false, error: 'Only the production team or admin can update production stage' },
           { status: 403 }
         )
       }
-      if (role === 'production') {
+      if (role === 'operations') {
         if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
           return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
         }
@@ -218,13 +218,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // the admin-facing generic Orders view) — this updates the structured
     // per-stage units/worker/status record the Production Queue module reads.
     if ('stage' in body) {
-      if (role !== 'admin' && role !== 'production') {
+      if (role !== 'admin' && role !== 'operations') {
         return NextResponse.json(
           { success: false, error: 'Only the production team or admin can update production progress' },
           { status: 403 }
         )
       }
-      if (role === 'production') {
+      if (role === 'operations') {
         if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
           return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
         }
@@ -281,12 +281,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     // ── Intent: Courier / Shipping Details Assignment ────────────────────────
     // Triggered by presence of courierPartner. Allowed for: admin, sales,
-    // accounts. Auto-dispatches a 'shipping_ready' order the first time
-    // courier info is saved; later calls just edit the details in place.
+    // accounting, operations. Auto-dispatches a 'shipping_ready' order the
+    // first time courier info is saved; later calls just edit the details in
+    // place.
     if ('courierPartner' in body) {
-      if (!['admin', 'sales', 'accounts'].includes(role)) {
+      if (!['admin', 'sales', 'accounting', 'operations'].includes(role)) {
         return NextResponse.json(
-          { success: false, error: 'Only admin, sales, or accounts can assign shipping/courier details' },
+          { success: false, error: 'Only admin, sales, accounting, or operations can assign shipping/courier details' },
           { status: 403 }
         )
       }

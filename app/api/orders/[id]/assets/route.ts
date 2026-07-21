@@ -6,7 +6,7 @@ import ActivityLog from '@/models/ActivityLog'
 import { orderAssetSchema } from '@/validations/order.schema'
 import { canViewOrderDetail } from '@/lib/order-visibility'
 
-const ALLOWED_ROLES = ['admin', 'sales', 'creative', 'production']
+const ALLOWED_ROLES = ['admin', 'sales', 'creative', 'operations']
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

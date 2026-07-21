@@ -32,7 +32,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    if (!['admin', 'production'].includes(session.role)) {
+    if (!['admin', 'operations'].includes(session.role)) {
       return NextResponse.json({ success: false, error: 'Only the production team or admin can complete production' }, { status: 403 })
     }
 
@@ -59,7 +59,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
       )
     }
 
-    if (session.role === 'production') {
+    if (session.role === 'operations') {
       if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
         return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
       }

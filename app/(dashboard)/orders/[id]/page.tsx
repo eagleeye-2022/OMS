@@ -47,7 +47,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         loading={loading}
         // See app/(dashboard)/orders/page.tsx for why this defaults to a
         // no-special-privilege role rather than 'sales'/'admin'.
-        role={user?.role ?? 'accounts'}
+        role={user?.role ?? 'accounting'}
         onEdit={() => setModalOpen(true)}
         onRefresh={load}
       />

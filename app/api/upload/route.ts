@@ -6,7 +6,7 @@ import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_FILE_SIZE } from '@/lib/upload'
 const ALLOWED_MIME_TYPES = new Set<string>(ALLOWED_UPLOAD_MIME_TYPES)
 
 const CLIENT_UPLOAD_ROLES = ['admin', 'sales']
-const ORDER_UPLOAD_ROLES = ['admin', 'sales', 'creative', 'production', 'accounts']
+const ORDER_UPLOAD_ROLES = ['admin', 'sales', 'creative', 'operations', 'accounting']
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9.\-_]/g, '_').slice(-100)

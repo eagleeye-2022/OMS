@@ -9,10 +9,12 @@ import { NOTE_TYPE_LABEL, type NoteType } from '@/lib/constants'
 
 // Notes are siloed by domain (general/creative/production/shipping/
 // accounts) — a role only reads/writes the domain(s) it owns, per
-// NOTE_TYPE_ACCESS in lib/constants.ts. Admin sees/writes every domain. The
-// 'shipping' role has zero domains under the final access matrix (it owns
-// no module), so every request from that role is rejected here regardless
-// of noteType.
+// NOTE_TYPE_ACCESS in lib/constants.ts. Admin sees/writes every domain.
+// 'operations' (the merged production+shipping role) only owns the
+// 'production' note domain — it inherited that from the old 'production'
+// role; the old 'shipping' role had zero note domains, so operations still
+// can't read/write 'shipping'-domain notes despite having the Shipping
+// module in its UI.
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

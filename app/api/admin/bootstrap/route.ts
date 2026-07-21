@@ -7,20 +7,33 @@ import type { Role } from '@/lib/constants'
 export const dynamic = 'force-dynamic'
 
 // ============================================================================
-// PASTE YOUR REAL USERS HERE when you're ready to go live — replace this
-// array with your actual team's { name, email, password, role, phone } list.
-// `role` must be one of the Role values in lib/constants.ts (admin, sales,
-// creative, production, shipping, accounts) — that's the single source of
-// truth ROLE_PERMISSIONS/ROLE_DEFAULT_REDIRECT read from, so any role you
-// assign here automatically gets the right module access and post-login
-// redirect with no other code changes.
+// PRODUCTION ROLE → EMAIL MAPPING — set 2026-07-21. `role` must be one of the
+// Role values in lib/constants.ts (admin, sales, creative, operations,
+// accounting) — that's the single source of truth ROLE_PERMISSIONS/
+// ROLE_DEFAULT_REDIRECT read from, so any role assigned here automatically
+// gets the right module access and post-login redirect with no other code
+// changes. 'operations' covers both the Production floor queue and the
+// Shipping/dispatch queue (merged from the former separate 'production' and
+// 'shipping' roles).
+//
+// Vaishnavi's 5 "-tester" entries use Gmail/Google-Workspace-style '+'
+// sub-addressing (vaishnavi.shivhare+role@eagleeyedigital.io) so one real
+// inbox can hold 5 distinct logins, one per role — the User.email field is
+// unique, so the same literal address cannot back 5 separate accounts.
+// CONFIRM eagleeyedigital.io actually supports '+' addressing (standard on
+// Google Workspace/Gmail) before relying on this — if it doesn't, mail to
+// these addresses won't be delivered to her inbox and she won't receive
+// OTP/password-reset emails sent to them.
 //
 // `password` is only the ONE-TIME initial password — it's bcrypt-hashed by
 // User's pre('save') hook the moment this runs (same hook every other
-// password path uses), never stored or logged in plaintext. Give each user
-// their password out-of-band and have them change it from Settings, or send
-// them through the Forgot Password flow instead of telling them a password
-// at all.
+// password path uses), never stored or logged in plaintext by the app. It
+// IS in this source file in plaintext, though — that's the pre-existing,
+// deliberate design of this route (see git history), not something new. If
+// this repo is or ever becomes non-private, treat these 10 passwords as
+// burned the moment this file is committed and have every one of these users
+// change their password (Settings) or go through Forgot Password on first
+// login rather than keep the one assigned here.
 //
 // How to run this safely in production:
 //   1. Set ADMIN_BOOTSTRAP_TOKEN in your production environment variables
@@ -36,12 +49,20 @@ export const dynamic = 'force-dynamic'
 //      fully seeded, so the route goes back to returning 404 for everyone.
 // ============================================================================
 const DEMO_USERS: Array<{ name: string; email: string; password: string; role: Role; phone: string }> = [
-  { name: 'Aryan Mehta', email: 'admin@untitledstore.com', password: 'Admin@123', role: 'admin', phone: '9876543210' },
-  { name: 'Priya Sharma', email: 'sales@untitledstore.com', password: 'Sales@123', role: 'sales', phone: '9876543211' },
-  { name: 'Vaishnavi Shivhare', email: 'creative@untitledstore.com', password: 'Creative@123', role: 'creative', phone: '9876543212' },
-  { name: 'Rahul Verma', email: 'production@untitledstore.com', password: 'Prod@123', role: 'production', phone: '9876543213' },
-  { name: 'Sanjay Kumar', email: 'shipping@untitledstore.com', password: 'Ship@123', role: 'shipping', phone: '9876543214' },
-  { name: 'Neha Gupta', email: 'accounts@untitledstore.com', password: 'Acc@123', role: 'accounts', phone: '9876543215' },
+  { name: 'Admin', email: 'bloopersstore@gmail.com', password: 'WuMsa5cst2=*c*!+', role: 'admin', phone: '' },
+  { name: 'Vaishnavi Shivhare (Admin - Tester)', email: 'vaishnavi.shivhare+admin@eagleeyedigital.io', password: 'K+W3fnpn6DeE^MKS', role: 'admin', phone: '' },
+
+  { name: 'Operations', email: 'ordersbloopers@gmail.com', password: 'C8u5YeC#7Fr9Jm!U', role: 'operations', phone: '' },
+  { name: 'Vaishnavi Shivhare (Operations - Tester)', email: 'vaishnavi.shivhare+operations@eagleeyedigital.io', password: 'Rcn7x=hn^BWu6v!_', role: 'operations', phone: '' },
+
+  { name: 'Sales', email: 'officialbloopersstore@gmail.com', password: 'Bge6sZ&7ZwV2U3@h', role: 'sales', phone: '' },
+  { name: 'Vaishnavi Shivhare (Sales - Tester)', email: 'vaishnavi.shivhare+sales@eagleeyedigital.io', password: 'My5k%NM=yJixsR3d', role: 'sales', phone: '' },
+
+  { name: 'Accounting', email: 'accounts@bloopersstore.in', password: 'z=jWStB8Ft8V-c7m', role: 'accounting', phone: '' },
+  { name: 'Vaishnavi Shivhare (Accounting - Tester)', email: 'vaishnavi.shivhare+accounting@eagleeyedigital.io', password: 'Gca8w*_A7zN362Z#', role: 'accounting', phone: '' },
+
+  { name: 'Design & Creative', email: 'bloopersdesign@gmail.com', password: 'Uf4_6bLNKp6-qUm8', role: 'creative', phone: '' },
+  { name: 'Vaishnavi Shivhare (Creative - Tester)', email: 'vaishnavi.shivhare+creative@eagleeyedigital.io', password: 'Kn+5#pJ-myBk55EP', role: 'creative', phone: '' },
 ]
 
 function tokensMatch(provided: string, expected: string): boolean {

@@ -32,7 +32,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         .lean(),
       User.find({ role: 'sales', isActive: true }).select('name role').lean(),
       User.find({ role: 'creative', isActive: true }).select('name role').lean(),
-      User.find({ role: 'production', isActive: true }).select('name role').lean(),
+      User.find({ role: 'operations', isActive: true }).select('name role').lean(),
     ])
     if (!order) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
 

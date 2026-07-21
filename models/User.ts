@@ -19,7 +19,7 @@ const UserSchema = new Schema<IUserDocument>(
     password: { type: String, required: true, select: false },
     role: {
       type: String,
-      enum: ['admin', 'sales', 'creative', 'production', 'shipping', 'accounts'],
+      enum: ['admin', 'sales', 'creative', 'operations', 'accounting'],
       required: true,
     },
     phone: { type: String, trim: true },

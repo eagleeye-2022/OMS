@@ -27,7 +27,7 @@ export default function ProductionDetailRoute({ params }: { params: Promise<{ id
   useEffect(() => { load() }, [load])
 
   const isAdmin = user?.role === 'admin'
-  const canEditStages = user?.role === 'admin' || user?.role === 'production'
+  const canEditStages = user?.role === 'admin' || user?.role === 'operations'
 
   return (
     <div className="p-6 space-y-5 max-w-2xl">

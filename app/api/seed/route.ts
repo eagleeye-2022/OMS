@@ -34,13 +34,16 @@ export async function POST() {
     // NODE_ENV guard above). To go live with real emails/roles, use
     // app/api/admin/bootstrap/route.ts's DEMO_USERS array instead, which is
     // the production-safe, token-gated equivalent of the user list below.
+    // 5-role taxonomy (admin/sales/creative/operations/accounting) — matches
+    // lib/constants.ts's ROLES since 2026-07-21, when 'production' and
+    // 'shipping' were merged into one 'operations' role and 'accounts' was
+    // renamed 'accounting'.
     const users = await User.create([
       { name: 'Aryan Mehta', email: 'admin@untitledstore.com', password: 'Admin@123', role: 'admin', phone: '9876543210', isActive: true },
       { name: 'Priya Sharma', email: 'sales@untitledstore.com', password: 'Sales@123', role: 'sales', phone: '9876543211', isActive: true },
       { name: 'Vaishnavi Shivhare', email: 'creative@untitledstore.com', password: 'Creative@123', role: 'creative', phone: '9876543212', isActive: true },
-      { name: 'Rahul Verma', email: 'production@untitledstore.com', password: 'Prod@123', role: 'production', phone: '9876543213', isActive: true },
-      { name: 'Sanjay Kumar', email: 'shipping@untitledstore.com', password: 'Ship@123', role: 'shipping', phone: '9876543214', isActive: true },
-      { name: 'Neha Gupta', email: 'accounts@untitledstore.com', password: 'Acc@123', role: 'accounts', phone: '9876543215', isActive: true },
+      { name: 'Rahul Verma', email: 'operations@untitledstore.com', password: 'Ops@123', role: 'operations', phone: '9876543213', isActive: true },
+      { name: 'Neha Gupta', email: 'accounting@untitledstore.com', password: 'Acc@123', role: 'accounting', phone: '9876543215', isActive: true },
     ])
 
     const adminUser = users[0]
@@ -495,9 +498,8 @@ export async function GET() {
       admin: { email: 'admin@untitledstore.com', password: 'Admin@123' },
       sales: { email: 'sales@untitledstore.com', password: 'Sales@123' },
       creative: { email: 'creative@untitledstore.com', password: 'Creative@123' },
-      production: { email: 'production@untitledstore.com', password: 'Prod@123' },
-      shipping: { email: 'shipping@untitledstore.com', password: 'Ship@123' },
-      accounts: { email: 'accounts@untitledstore.com', password: 'Acc@123' },
+      operations: { email: 'operations@untitledstore.com', password: 'Ops@123' },
+      accounting: { email: 'accounting@untitledstore.com', password: 'Acc@123' },
     },
   })
 }

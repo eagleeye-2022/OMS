@@ -31,7 +31,9 @@ export default function ShippingDetailRoute({ params }: { params: Promise<{ id: 
   useEffect(() => { load() }, [load])
 
   const isAdmin = user?.role === 'admin'
-  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounts'
+  // 'operations' now has full Shipping write access — see the matching
+  // comment in app/(dashboard)/shipping/page.tsx for the full rationale.
+  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounting' || user?.role === 'operations'
 
   return (
     <div className="p-6 space-y-5 max-w-2xl">

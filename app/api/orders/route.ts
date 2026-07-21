@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
       query.status = { $in: SHIPPING_RELEVANT_STATUSES }
     }
     if (assignedToMe) {
-      if (session.role === 'production') {
+      if (session.role === 'operations') {
         query['assignedTeam.productionManager'] = session.id
       } else {
         query['assignedTeam.creativeExecutive'] = session.id
@@ -106,11 +106,11 @@ export async function GET(req: NextRequest) {
     // assigned tasks" restriction instead of seeing unassigned work.
     if (relevantTo === 'production') {
       applyOwnQueueVisibility(query, session, {
-        restrictedRoles: ['production'],
+        restrictedRoles: ['operations'],
         assignmentField: 'assignedTeam.productionManager',
         view,
         unassignedViewRoles: ['admin'],
-        allAssignedViewRoles: ['production'],
+        allAssignedViewRoles: ['operations'],
       })
     }
     if (search) {

@@ -143,7 +143,7 @@ export default function OrdersPage() {
           stage={stage}
           onStageChange={setStage}
           selectedId={selectedId}
-          canViewFinance={user ? ['admin', 'sales', 'accounts'].includes(user.role) : false}
+          canViewFinance={user ? ['admin', 'sales', 'accounting'].includes(user.role) : false}
           onSelect={handleSelect}
         />
         <OrderDetailPanel
@@ -154,7 +154,7 @@ export default function OrdersPage() {
           // action UI in this panel (unlike defaulting to 'sales'/'admin',
           // which would briefly flash an Edit Details button a restricted
           // user shouldn't see). The real role always wins once it loads.
-          role={user?.role ?? 'accounts'}
+          role={user?.role ?? 'accounting'}
           hasAnyOrders={total > 0}
           onEdit={handleEdit}
           onRefresh={handleRefresh}

@@ -7,7 +7,7 @@ import ActivityLog from '@/models/ActivityLog'
 import { upsertInvoiceSchema } from '@/validations/order.schema'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS } from '@/lib/order-visibility'
 
-const ACCOUNTS_ROLES = ['admin', 'accounts']
+const ACCOUNTS_ROLES = ['admin', 'accounting']
 
 /**
  * Upsert/patch the order's single embedded invoice. Supports both the full

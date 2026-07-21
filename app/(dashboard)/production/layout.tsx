@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { ROLE_DEFAULT_REDIRECT } from '@/lib/constants'
 
-const PRODUCTION_ALLOWED_ROLES = ['admin', 'production']
+const PRODUCTION_ALLOWED_ROLES = ['admin', 'operations']
 
 export default async function ProductionLayout({ children }: { children: React.ReactNode }) {
   const user = await getSession()

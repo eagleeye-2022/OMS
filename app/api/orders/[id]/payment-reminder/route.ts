@@ -5,7 +5,7 @@ import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
 import { paymentReminderSchema } from '@/validations/order.schema'
 
-const ACCOUNTS_ROLES = ['admin', 'accounts']
+const ACCOUNTS_ROLES = ['admin', 'accounting']
 
 /**
  * Logs an overdue-payment reminder. There is no email/WhatsApp dispatch

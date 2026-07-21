@@ -120,11 +120,11 @@ export function OrderDetailPanel({ order, logs, loading, role, hasAnyOrders = tr
       </div>
 
       {role === 'creative' && <CreativeUpdateCard order={order} onUpdated={onRefresh} />}
-      {role === 'production' && <ProductionUpdateCard order={order} onUpdated={onRefresh} />}
+      {role === 'operations' && <ProductionUpdateCard order={order} onUpdated={onRefresh} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <AssignedTeamCard order={order} canEdit={canEditCore} onUpdated={onRefresh} />
-        <AssetsDocumentsCard order={order} canEdit={['admin', 'sales', 'creative', 'production'].includes(role)} onUpdated={onRefresh} />
+        <AssetsDocumentsCard order={order} canEdit={['admin', 'sales', 'creative', 'operations'].includes(role)} onUpdated={onRefresh} />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

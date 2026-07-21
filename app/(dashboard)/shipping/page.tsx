@@ -22,7 +22,15 @@ export default function ShippingPage() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const isAdmin = user?.role === 'admin'
-  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounts'
+  // 'operations' (the merged production+shipping role) now has full Shipping
+  // write access — courier assignment/dispatch and status updates (In
+  // Transit/Delayed) — matching admin/sales/accounting. Decided 2026-07-21,
+  // reversing the earlier "view-only" restriction the old 'shipping' role
+  // had. "Mark as Delivered" stays admin-only regardless (gated separately
+  // by `isAdmin` in ShippingStatusActionsCard, not by canEditShipping) — an
+  // unrelated, harder business rule that predates this change and applies
+  // equally to sales/accounting today.
+  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounting' || user?.role === 'operations'
 
   // Tracks the most recently *requested* list query / order id so an
   // out-of-order network response can be detected and discarded instead of

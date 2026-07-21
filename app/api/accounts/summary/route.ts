@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Order from '@/models/Order'
 
-const ACCOUNTS_ROLES = ['admin', 'accounts']
+const ACCOUNTS_ROLES = ['admin', 'accounting']
 
 export async function GET() {
   try {

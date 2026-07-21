@@ -3,7 +3,7 @@ import { NOTE_TYPE_ACCESS, type Role, type NoteType } from './constants'
 
 const FINANCE_FIELDS = ['totalAmount', 'advancePaid', 'balanceDue', 'paymentStatus', 'invoice'] as const
 
-export const CAN_VIEW_FINANCE: Role[] = ['admin', 'sales', 'accounts']
+export const CAN_VIEW_FINANCE: Role[] = ['admin', 'sales', 'accounting']
 
 // Shipping/courier/delivery fields — operationally sensitive in the same way
 // finance fields are, but distinct from them (a role can legitimately see
@@ -15,7 +15,7 @@ const SHIPPING_FIELDS = [
   'shipmentWeight', 'packageCount', 'deliveredAt', 'deliveredBy', 'delayReason',
 ] as const
 
-export const CAN_VIEW_SHIPPING: Role[] = ['admin', 'sales', 'accounts', 'shipping']
+export const CAN_VIEW_SHIPPING: Role[] = ['admin', 'sales', 'accounting', 'operations']
 
 // Mongoose populate() projection for the order's embedded client — used by
 // every order-detail route (GET/PUT /api/orders/[id], mark-delivered,
@@ -38,9 +38,9 @@ const CLIENT_DETAIL_FIELDS = [
   'sameAsBilling', 'gstNumber', 'invoiceRecipientName', 'invoiceEmail',
 ] as const
 
-// Includes 'shipping' — the delivery address lives on the embedded client
-// object, and a shipping operator needs it to actually ship anything.
-export const CAN_VIEW_CLIENT_DETAILS: Role[] = ['admin', 'sales', 'accounts', 'shipping']
+// Includes 'operations' — the delivery address lives on the embedded client
+// object, and an operations user needs it to actually ship anything.
+export const CAN_VIEW_CLIENT_DETAILS: Role[] = ['admin', 'sales', 'accounting', 'operations']
 
 /**
  * Restricts a queue listing to "my assigned tasks only" by default for the
@@ -115,13 +115,13 @@ export function isOrderAssignedToSelf(
 }
 
 /**
- * Whether a 'creative' or 'production' session may view this order's detail
+ * Whether a 'creative' or 'operations' session may view this order's detail
  * at all (GET /api/orders/[id]) — mirrors applyOwnQueueVisibility's list
  * rules so list and detail can never disagree. Creative may view their own
  * claimed work plus the still-unclaimed pool (matching the Unassigned tab);
- * production may view any order assigned to *some* production user, own or a
+ * operations may view any order assigned to *some* operations user, own or a
  * teammate's (matching the My Queue/All tabs — there is no unassigned view
- * for production). Every other role is unrestricted, same as before this
+ * for operations). Every other role is unrestricted, same as before this
  * existed. Closes the gap where applyOwnQueueVisibility only filtered the
  * list query, never the item-level GET, so a restricted-role user could
  * bypass "my queue only" simply by opening an order's detail URL directly.
@@ -134,7 +134,7 @@ export function canViewOrderDetail(
     const id = assigneeIdString(order.assignedTeam?.creativeExecutive)
     return id === undefined || id === session.id
   }
-  if (session.role === 'production') {
+  if (session.role === 'operations') {
     return assigneeIdString(order.assignedTeam?.productionManager) !== undefined
   }
   return true

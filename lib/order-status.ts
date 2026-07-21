@@ -47,9 +47,14 @@ export const ROLE_ALLOWED_STATUSES: Record<Role, OrderStatus[]> = {
   ],
   sales: ['design_review', 'cancelled', 'in_transit', 'delayed'],
   creative: [],
-  production: [],
-  shipping: [],
-  accounts: ['in_transit', 'delayed'],
+  // Matches accounting's set — both are the "In Transit / Delayed" buttons
+  // ShippingStatusActionsCard exposes to any canEditShipping role. Without
+  // this, giving operations canEditShipping=true (see the Shipping page
+  // components) would show those buttons but the server would 403 on click,
+  // since this list — not canEditShipping — is what actually gates the
+  // underlying `status` PUT intent above.
+  operations: ['in_transit', 'delayed'],
+  accounting: ['in_transit', 'delayed'],
 }
 
 export type StatusUpdateResult = { ok: true } | { ok: false; status: number; error: string }

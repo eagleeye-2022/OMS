@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { ROLE_DEFAULT_REDIRECT } from '@/lib/constants'
 
-const SHIPPING_ALLOWED_ROLES = ['admin', 'accounts', 'sales', 'shipping']
+const SHIPPING_ALLOWED_ROLES = ['admin', 'accounting', 'sales', 'operations']
 
 export default async function ShippingLayout({ children }: { children: React.ReactNode }) {
   const user = await getSession()
