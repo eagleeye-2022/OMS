@@ -27,6 +27,15 @@ function getTransporter(smtp: SmtpConfig): Transporter {
 
 const MAX_ATTEMPTS = 2
 
+export interface MailResult {
+  delivered: boolean
+  // Machine-readable outcome for callers' structured logs — never the raw
+  // SMTP error text (that goes to console.error only) so a caller logging
+  // this value can't accidentally leak transport-level detail (e.g. a
+  // partial password from an auth error string) into a less-trusted sink.
+  reason: 'sent' | 'smtp_error' | 'not_configured' | 'dev_console'
+}
+
 async function sendViaSmtp(smtp: SmtpConfig, from: string, message: MailMessage): Promise<boolean> {
   const transporter = getTransporter(smtp)
 
@@ -49,14 +58,17 @@ async function sendViaSmtp(smtp: SmtpConfig, from: string, message: MailMessage)
  * notification). Deliberately never throws: a provider outage turning into
  * a thrown error would surface as a 500 instead of the caller's normal
  * response, which for an auth-adjacent endpoint could leak information
- * through the difference. Callers log delivery failures themselves instead.
+ * through the difference. Returns a MailResult instead so callers can log
+ * the real outcome (see request-login-otp's `otp_mail_result` log line) —
+ * a silent void return here is exactly what let the 2026-07-22 "mail
+ * silently never sent in production" incident go undetected for so long.
  */
-export async function sendMail(message: MailMessage): Promise<void> {
+export async function sendMail(message: MailMessage): Promise<MailResult> {
   const config = getMailConfig()
 
   if (config.provider === 'smtp' && config.smtp) {
     const delivered = await sendViaSmtp(config.smtp, config.from, message)
-    if (delivered) return
+    if (delivered) return { delivered: true, reason: 'sent' }
 
     // In production, never fall through to logging the message body below —
     // that body carries the OTP/reset content, and stdout in production is
@@ -65,16 +77,21 @@ export async function sendMail(message: MailMessage): Promise<void> {
     // leaking the code to anyone with log access.
     if (process.env.NODE_ENV === 'production') {
       console.error(`[mailer] Giving up on ${message.to} after ${MAX_ATTEMPTS} failed SMTP attempts`)
-      return
+      return { delivered: false, reason: 'smtp_error' }
     }
   } else if (process.env.NODE_ENV === 'production') {
     console.error(
-      '[mailer] No mail provider configured in production (SMTP_HOST/SMTP_USER/SMTP_PASS are unset) — email not sent. See .env.local for the variables to set.'
+      JSON.stringify({
+        event: 'mail_not_configured',
+        message: 'No mail provider configured in production — email not sent.',
+        missingVars: config.diagnostics.missingVars,
+      })
     )
-    return
+    return { delivered: false, reason: 'not_configured' }
   }
 
   // Dev-only fallback (also reached in dev when SMTP isn't configured yet,
   // and as a same-process retry-exhausted fallback in dev only).
   console.log(`[mailer:dev] To: ${message.to} | Subject: ${message.subject}\n${message.text}`)
+  return { delivered: false, reason: 'dev_console' }
 }

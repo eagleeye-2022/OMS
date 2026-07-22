@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ShieldCheck, Factory, ShoppingBag, Calculator, Palette, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
@@ -11,6 +12,21 @@ import { ROLE_DEFAULT_REDIRECT, ROLE_LABEL, type Role } from '@/lib/constants'
 const OTP_TTL_SECONDS = 10 * 60
 const RESEND_COOLDOWN_SECONDS = 30
 
+// Shown to everyone who lands on /login, before any email is entered — this
+// is not a permissions list. The server is the actual boundary: whichever
+// role is picked here is sent as `selectedRole`, and request-login-otp/
+// verify-login-otp both reject (hard, no OTP / no session) unless it matches
+// that email's real User.role in the DB. A production account cannot use
+// this picker to become a different role than the one it was provisioned
+// with — see the `role_mismatch_denied` check in both routes.
+const LOGIN_ROLES: { role: Role; icon: React.ReactNode }[] = [
+  { role: 'admin', icon: <ShieldCheck size={20} /> },
+  { role: 'operations', icon: <Factory size={20} /> },
+  { role: 'sales', icon: <ShoppingBag size={20} /> },
+  { role: 'accounting', icon: <Calculator size={20} /> },
+  { role: 'creative', icon: <Palette size={20} /> },
+]
+
 function formatCountdown(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60)
   const s = totalSeconds % 60
@@ -19,9 +35,9 @@ function formatCountdown(totalSeconds: number): string {
 
 export default function LoginPage() {
   const router = useRouter()
-  const [step, setStep] = useState<'email' | 'otp'>('email')
+  const [step, setStep] = useState<'role' | 'email' | 'otp'>('role')
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<Role | null>(null)
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -42,10 +58,16 @@ export default function LoginPage() {
     const res = await fetch('/api/auth/request-login-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, selectedRole }),
     })
     const data = await res.json()
     return data as { success: boolean; error?: string; role?: Role }
+  }
+
+  const handlePickRole = (role: Role) => {
+    setSelectedRole(role)
+    setError('')
+    setStep('email')
   }
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -58,7 +80,6 @@ export default function LoginPage() {
         setError(data.error || 'Could not send login code')
         return
       }
-      setRole(data.role ?? null)
       setOtp('')
       setSecondsLeft(OTP_TTL_SECONDS)
       setResendCooldown(RESEND_COOLDOWN_SECONDS)
@@ -82,7 +103,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/verify-login-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
+        body: JSON.stringify({ email, otp, selectedRole }),
       })
       const data = await res.json()
       if (!data.success) {
@@ -123,22 +144,43 @@ export default function LoginPage() {
     setStep('email')
     setOtp('')
     setError('')
-    setRole(null)
   }
 
-  if (step === 'otp') {
+  const handleChangeRole = () => {
+    setStep('role')
+    setSelectedRole(null)
+    setEmail('')
+    setOtp('')
+    setError('')
+  }
+
+  if (step === 'role') {
     return (
-      <AuthLayout title="Enter Your Code">
+      <AuthLayout title="Log In" subtitle="Select your role to continue.">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {LOGIN_ROLES.map(({ role, icon }) => (
+            <button
+              key={role}
+              type="button"
+              onClick={() => handlePickRole(role)}
+              className="flex items-center gap-3 p-4 text-left border border-gray-200 rounded-lg bg-white hover:border-blue-400 hover:bg-blue-50 transition-colors"
+            >
+              <div className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-900 text-white shrink-0">{icon}</div>
+              <p className="font-medium text-gray-900">{ROLE_LABEL[role]}</p>
+            </button>
+          ))}
+        </div>
+      </AuthLayout>
+    )
+  }
+
+  if (step === 'otp' && selectedRole) {
+    return (
+      <AuthLayout title="Enter Your Code" subtitle={`Logging in as: ${ROLE_LABEL[selectedRole]}`}>
         <form onSubmit={handleVerify} className="space-y-5">
           <p className="text-sm text-gray-600 -mt-2">
             We sent a 6-digit login code to <span className="font-medium text-gray-900">{email}</span>.
           </p>
-
-          {role && (
-            <p className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
-              Logging in as <span className="font-semibold">{ROLE_LABEL[role]}</span> — you&apos;ll land on the {ROLE_LABEL[role]} dashboard.
-            </p>
-          )}
 
           <OtpInput value={otp} onChange={setOtp} disabled={loading} />
 
@@ -185,7 +227,15 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Log In">
+    <AuthLayout title="Log In" subtitle={selectedRole ? `Logging in as: ${ROLE_LABEL[selectedRole]}` : undefined}>
+      <button
+        type="button"
+        onClick={handleChangeRole}
+        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+      >
+        <ArrowLeft size={14} /> Change role
+      </button>
+
       <form onSubmit={handleSendCode} className="space-y-4">
         <Input
           label="Enter your email address"

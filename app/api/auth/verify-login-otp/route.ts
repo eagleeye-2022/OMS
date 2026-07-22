@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
   }
   const email = parsed.data.email.toLowerCase()
-  const { otp, testRole } = parsed.data
+  const { otp, testRole, selectedRole } = parsed.data
 
   const ip = getClientIp(req)
   const ipAllowed = await checkRateLimit(`verify-login-otp:${ip}`, 10, 15 * 60 * 1000)
@@ -94,6 +94,18 @@ export async function POST(req: NextRequest) {
     // it just falls back to the account's real DB role, so a tester who
     // mistypes a role (or a non-tester who stumbles onto the picker) still
     // logs in normally instead of being locked out.
+    // selectedRole (production /login) mismatch here should be unreachable
+    // in normal use — request-login-otp already hard-rejects it before an
+    // OTP is even sent. This is defense-in-depth against a tampered/replayed
+    // request that skipped that check. Unlike that hard rejection, this
+    // stage never fails the login outright (the caller just proved they own
+    // a valid code for this real account) — it only ever falls back to the
+    // account's true DB role, exactly like an unapproved testRole below.
+    // Never escalates either way.
+    if (selectedRole && selectedRole !== user.role) {
+      console.warn(JSON.stringify({ event: 'role_mismatch_denied', stage: 'verify_otp', email, selectedRole, actualRole: user.role, ip }))
+    }
+
     let sessionRole: Role = user.role
     if (testRole) {
       const allowedRoles = getTesterAllowedRoles(email)
