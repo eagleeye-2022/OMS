@@ -6,6 +6,7 @@ import { requestLoginOtpSchema } from '@/validations/auth.schema'
 import { generateOtp, hashOtp } from '@/lib/otp'
 import { sendMail } from '@/lib/mailer'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { getTesterAllowedRoles } from '@/lib/testers'
 
 const OTP_TTL_MS = 10 * 60 * 1000
 
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
   }
   const email = parsed.data.email.toLowerCase()
+  const { testRole } = parsed.data
 
   const ip = getClientIp(req)
   const ipAllowed = await checkRateLimit(`login-otp-request:${ip}`, 5, 15 * 60 * 1000)
@@ -48,6 +50,20 @@ export async function POST(req: NextRequest) {
     if (!user) {
       console.warn(JSON.stringify({ event: 'login_otp_rejected', reason: 'unauthorized_email', email, ip }))
       return NextResponse.json({ success: false, error: NOT_AUTHORIZED }, { status: 403 })
+    }
+
+    // testRole is only ever set by the /tester-login role picker. Reject
+    // here — before an OTP is even sent — if this email isn't an approved
+    // tester or hasn't been granted that specific role, so a mismatched
+    // pick fails fast instead of burning a code send and a rate-limit slot.
+    // This is a convenience check only: verify-login-otp repeats it
+    // authoritatively, since that's the call that actually mints a session.
+    if (testRole && !getTesterAllowedRoles(email).includes(testRole)) {
+      console.warn(JSON.stringify({ event: 'tester_role_denied', stage: 'request_otp', email, testRole, ip }))
+      return NextResponse.json(
+        { success: false, error: `This account is not approved to test the "${testRole}" role.` },
+        { status: 403 }
+      )
     }
 
     // Invalidate any previous outstanding login codes for this user before

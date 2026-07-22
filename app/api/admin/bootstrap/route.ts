@@ -21,10 +21,12 @@ export const dynamic = 'force-dynamic'
 // user here only grants them the ability to request a login code for this
 // exact email address; there is no credential to set or leak.
 //
-// Vaishnavi's and Ishita's tester accounts are each a single real inbox
-// (vaishnavi.shivhare@eagleeyedigital.io / ishita.vishwakarma@eagleeyedigital.io)
-// with the 'admin' role, so each can exercise every module in one login
-// rather than juggling separate per-role sub-addressed accounts.
+// Vaishnavi's, Ishita's, and Mohit's tester accounts all carry the 'admin'
+// DB role here, but that's just their default/fallback — the /tester-login
+// role picker (see lib/testers.ts's TESTER_ROLE_MAP) lets Vaishnavi's
+// session assume any of the five roles and Ishita/Mohit's stay pinned to
+// 'admin', without ever touching the DB role set below. Update
+// TESTER_ROLE_MAP, not this list, to change who can test which role.
 //
 // How to run this safely in production:
 //   1. Set ADMIN_BOOTSTRAP_TOKEN in your production environment variables —
@@ -46,6 +48,7 @@ const DEMO_USERS: Array<{ name: string; email: string; role: Role; phone: string
   { name: 'Design & Creative', email: 'bloopersdesign@gmail.com', role: 'creative', phone: '' },
   { name: 'Vaishnavi Shivhare (Tester)', email: 'vaishnavi.shivhare@eagleeyedigital.io', role: 'admin', phone: '' },
   { name: 'Ishita Vishwakarma (Tester)', email: 'ishita.vishwakarma@eagleeyedigital.io', role: 'admin', phone: '' },
+  { name: 'Mohit (Tester)', email: 'mohit@eagleeyedigital.io', role: 'admin', phone: '' },
 ]
 
 function tokensMatch(provided: string, expected: string): boolean {

@@ -8,6 +8,14 @@ export const ROLES = {
 
 export type Role = (typeof ROLES)[keyof typeof ROLES]
 
+export const ROLE_LABEL: Record<Role, string> = {
+  admin: 'Admin',
+  sales: 'Sales',
+  creative: 'Creative',
+  operations: 'Operations',
+  accounting: 'Accounting',
+}
+
 export const ORDER_STATUS = {
   PENDING: 'pending',
   DESIGN_REVIEW: 'design_review',

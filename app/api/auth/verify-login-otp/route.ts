@@ -7,6 +7,8 @@ import { verifyLoginOtpSchema } from '@/validations/auth.schema'
 import { compareOtp } from '@/lib/otp'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { signToken, SESSION_COOKIE } from '@/lib/auth'
+import { getTesterAllowedRoles } from '@/lib/testers'
+import type { Role } from '@/lib/constants'
 
 const MAX_ATTEMPTS = 5
 
@@ -34,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
   }
   const email = parsed.data.email.toLowerCase()
-  const { otp } = parsed.data
+  const { otp, testRole } = parsed.data
 
   const ip = getClientIp(req)
   const ipAllowed = await checkRateLimit(`verify-login-otp:${ip}`, 10, 15 * 60 * 1000)
@@ -84,7 +86,28 @@ export async function POST(req: NextRequest) {
     token.used = true
     await token.save()
 
-    const sessionUser = { id: user._id.toString(), name: user.name, email: user.email, role: user.role }
+    // testRole only ever comes from the /tester-login role picker. The OTP
+    // has just been confirmed correct, so this is checked here — not
+    // earlier — to avoid giving an unauthenticated caller an oracle for
+    // "is this email an approved tester for role X" independent of knowing
+    // the code. A mismatched/unapproved testRole does not fail the login;
+    // it just falls back to the account's real DB role, so a tester who
+    // mistypes a role (or a non-tester who stumbles onto the picker) still
+    // logs in normally instead of being locked out.
+    let sessionRole: Role = user.role
+    if (testRole) {
+      const allowedRoles = getTesterAllowedRoles(email)
+      if (allowedRoles.includes(testRole)) {
+        sessionRole = testRole
+        console.log(
+          JSON.stringify({ event: 'tester_role_login', email, testRole, dbRole: user.role, ip, at: new Date().toISOString() })
+        )
+      } else {
+        console.warn(JSON.stringify({ event: 'tester_role_denied', stage: 'verify_otp', email, testRole, ip }))
+      }
+    }
+
+    const sessionUser = { id: user._id.toString(), name: user.name, email: user.email, role: sessionRole }
     const sessionToken = signToken(sessionUser)
 
     const cookieStore = await cookies()
