@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { OtpInput } from '@/components/auth/OtpInput'
-import { ROLE_DEFAULT_REDIRECT } from '@/lib/constants'
+import { ROLE_DEFAULT_REDIRECT, ROLE_LABEL, type Role } from '@/lib/constants'
 
 const OTP_TTL_SECONDS = 10 * 60
 const RESEND_COOLDOWN_SECONDS = 30
@@ -21,6 +21,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [email, setEmail] = useState('')
+  const [role, setRole] = useState<Role | null>(null)
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -44,7 +45,7 @@ export default function LoginPage() {
       body: JSON.stringify({ email }),
     })
     const data = await res.json()
-    return data as { success: boolean; error?: string }
+    return data as { success: boolean; error?: string; role?: Role }
   }
 
   const handleSendCode = async (e: React.FormEvent) => {
@@ -57,6 +58,7 @@ export default function LoginPage() {
         setError(data.error || 'Could not send login code')
         return
       }
+      setRole(data.role ?? null)
       setOtp('')
       setSecondsLeft(OTP_TTL_SECONDS)
       setResendCooldown(RESEND_COOLDOWN_SECONDS)
@@ -121,6 +123,7 @@ export default function LoginPage() {
     setStep('email')
     setOtp('')
     setError('')
+    setRole(null)
   }
 
   if (step === 'otp') {
@@ -130,6 +133,12 @@ export default function LoginPage() {
           <p className="text-sm text-gray-600 -mt-2">
             We sent a 6-digit login code to <span className="font-medium text-gray-900">{email}</span>.
           </p>
+
+          {role && (
+            <p className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+              Logging in as <span className="font-semibold">{ROLE_LABEL[role]}</span> — you&apos;ll land on the {ROLE_LABEL[role]} dashboard.
+            </p>
+          )}
 
           <OtpInput value={otp} onChange={setOtp} disabled={loading} />
 

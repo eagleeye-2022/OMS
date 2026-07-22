@@ -85,7 +85,13 @@ export async function POST(req: NextRequest) {
       text: `Your login code is ${otp}. It expires in 10 minutes. If you didn't request this, you can ignore this email.`,
     })
 
-    return NextResponse.json({ success: true, message: 'A login code has been sent to your email.' })
+    // `role` here is always the account's real DB role (never testRole) —
+    // it's returned so /login can display "you're logging in as <role>"
+    // between requesting and entering the code. Purely informational: it
+    // does not grant anything and mirrors what verify-login-otp will return
+    // on success anyway, so this discloses nothing verify-login-otp doesn't
+    // already reveal one step later for this same already-authorized email.
+    return NextResponse.json({ success: true, message: 'A login code has been sent to your email.', role: user.role })
   } catch (err) {
     console.error('[auth] Request-login-otp error:', err instanceof Error ? err.message : err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })

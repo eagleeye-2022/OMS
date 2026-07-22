@@ -7,7 +7,7 @@ import type { Role } from '@/lib/constants'
 export const dynamic = 'force-dynamic'
 
 // ============================================================================
-// PRODUCTION ROLE → EMAIL MAPPING — updated 2026-07-21. `role` must be one of
+// PRODUCTION ROLE → EMAIL MAPPING — updated 2026-07-22. `role` must be one of
 // the Role values in lib/constants.ts (admin, sales, creative, operations,
 // accounting) — that's the single source of truth ROLE_PERMISSIONS/
 // ROLE_DEFAULT_REDIRECT read from, so any role assigned here automatically
@@ -28,6 +28,13 @@ export const dynamic = 'force-dynamic'
 // 'admin', without ever touching the DB role set below. Update
 // TESTER_ROLE_MAP, not this list, to change who can test which role.
 //
+// 'Ishitavishwawarma43@gmail.com' (sales) and
+// 'ishitavishwakarma220743@acropolis.in' (operations), added 2026-07-22, are
+// REAL production team accounts, not testers — despite the name similarity
+// to the 'ishita.vishwakarma@eagleeyedigital.io' admin tester above, these
+// are different people/inboxes with fixed, non-selectable roles. They are
+// intentionally NOT in TESTER_ROLE_MAP.
+//
 // How to run this safely in production:
 //   1. Set ADMIN_BOOTSTRAP_TOKEN in your production environment variables —
 //      a long random string, not something guessable.
@@ -46,6 +53,8 @@ const DEMO_USERS: Array<{ name: string; email: string; role: Role; phone: string
   { name: 'Sales', email: 'officialbloopersstore@gmail.com', role: 'sales', phone: '' },
   { name: 'Accounting', email: 'accounts@bloopersstore.in', role: 'accounting', phone: '' },
   { name: 'Design & Creative', email: 'bloopersdesign@gmail.com', role: 'creative', phone: '' },
+  { name: 'Sales', email: 'ishitavishwawarma43@gmail.com', role: 'sales', phone: '' },
+  { name: 'Operations', email: 'ishitavishwakarma220743@acropolis.in', role: 'operations', phone: '' },
   { name: 'Vaishnavi Shivhare (Tester)', email: 'vaishnavi.shivhare@eagleeyedigital.io', role: 'admin', phone: '' },
   { name: 'Ishita Vishwakarma (Tester)', email: 'ishita.vishwakarma@eagleeyedigital.io', role: 'admin', phone: '' },
   { name: 'Mohit (Tester)', email: 'mohit@eagleeyedigital.io', role: 'admin', phone: '' },
