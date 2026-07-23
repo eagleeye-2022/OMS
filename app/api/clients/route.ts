@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Client from '@/models/Client'
+import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
 import { clientSchema, clientDraftSchema } from '@/validations/client.schema'
 import { CLOSED_ORDER_STATUSES } from '@/lib/constants'
+import { getNextOrderNumber, computeOrderMoney } from '@/lib/order-creation'
+import type { SessionUser } from '@/lib/auth'
+import type { IProductPreference } from '@/models/Client'
 
 function mongoError(err: unknown): NextResponse | null {
   const e = err as { code?: number; name?: string; message?: string }
@@ -87,6 +91,65 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * Creates a real Order for every product-preference row that carries
+ * pricing — this is what makes the client wizard's "Order Preferences" step
+ * (StepAssetsOrder.tsx) actually place orders instead of only saving
+ * reference data on the Client doc (the 2026-07-22 fix for "first order
+ * created with a new client is not visible"). Mirrors POST /api/orders'
+ * field mapping exactly (productType <- the free-text note, category <- the
+ * dropdown) so an order created this way is indistinguishable from one made
+ * from the Orders tab. Only called for a client's initial creation with
+ * status=active — editing an existing client's preferences later (PUT) does
+ * not create orders, matching the reported bug's exact scope.
+ */
+async function createFirstOrdersForClient(
+  clientId: string,
+  deliveryDate: string | undefined,
+  productPreferences: Array<Partial<IProductPreference>>,
+  session: SessionUser
+) {
+  if (!deliveryDate) return []
+  const createdOrders = []
+
+  for (const pref of productPreferences) {
+    if (!pref.totalAmount || pref.totalAmount <= 0) continue
+
+    const orderNumber = await getNextOrderNumber()
+    const advancePaid = pref.advancePaid || 0
+    const { balanceDue, paymentStatus } = computeOrderMoney(pref.totalAmount, advancePaid)
+
+    const order = await Order.create({
+      orderNumber,
+      client: clientId,
+      category: pref.preferredProductCategory,
+      productType: pref.orderNote,
+      quantity: pref.orderQuantity,
+      deliveryDate,
+      totalAmount: pref.totalAmount,
+      advancePaid,
+      balanceDue,
+      paymentStatus,
+      status: 'pending',
+      designStatus: 'pending',
+      createdBy: session.id,
+    })
+
+    await ActivityLog.create({
+      type: 'order_created',
+      description: `Order ${orderNumber} created`,
+      order: order._id,
+      client: clientId,
+      user: session.id,
+      userName: session.name,
+    })
+
+    createdOrders.push(order)
+  }
+
+  return createdOrders
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
@@ -117,7 +180,11 @@ export async function POST(req: NextRequest) {
       userName: session.name,
     })
 
-    return NextResponse.json({ success: true, data: client }, { status: 201 })
+    const orders = isFinal
+      ? await createFirstOrdersForClient(client._id.toString(), parsed.data.deliveryDate, parsed.data.productPreferences ?? [], session)
+      : []
+
+    return NextResponse.json({ success: true, data: client, orders }, { status: 201 })
   } catch (err) {
     const safe = mongoError(err)
     if (safe) return safe

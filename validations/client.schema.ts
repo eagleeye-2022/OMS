@@ -42,10 +42,16 @@ const partialEscalationContactSchema = z.object({
   address: z.string().optional().or(z.literal('')),
 })
 
+// Each row here becomes a real Order (see app/api/clients/route.ts POST) once
+// the client is saved as active, so totalAmount is required here exactly
+// like orderSchema.totalAmount is required for a standalone order — this
+// row IS an order, not a loose sales estimate, once it reaches this schema.
 const productPreferenceSchema = z.object({
   preferredProductCategory: z.string().min(1, 'Preferred product category is required'),
   orderQuantity: z.coerce.number().int().positive('Order quantity must be a positive number'),
   orderNote: z.string().min(1, 'Order note is required'),
+  totalAmount: z.coerce.number().positive('Total order value is required and must be greater than 0'),
+  advancePaid: z.coerce.number().min(0).optional(),
 })
 
 /**
@@ -124,6 +130,8 @@ export const clientDraftSchema = z.object({
     preferredProductCategory: z.string().optional().or(z.literal('')),
     orderQuantity: z.coerce.number().optional(),
     orderNote: z.string().optional().or(z.literal('')),
+    totalAmount: z.coerce.number().min(0).optional(),
+    advancePaid: z.coerce.number().min(0).optional(),
   })).optional(),
   notes: z.string().optional().or(z.literal('')),
 })

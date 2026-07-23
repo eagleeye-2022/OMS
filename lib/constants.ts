@@ -8,11 +8,16 @@ export const ROLES = {
 
 export type Role = (typeof ROLES)[keyof typeof ROLES]
 
+// Display names only — shown on /login and /tester-login's role pickers.
+// The underlying role key ('operations') is unchanged everywhere else
+// (ROLE_PERMISSIONS, DB User.role, ACLs, route guards, etc.) — renaming it
+// here only relabels what testers/production users see when picking a
+// role, per the 2026-07-23 "Operations -> Production" rebrand request.
 export const ROLE_LABEL: Record<Role, string> = {
   admin: 'Admin',
   sales: 'Sales',
   creative: 'Creative',
-  operations: 'Operations',
+  operations: 'Production',
   accounting: 'Accounting',
 }
 

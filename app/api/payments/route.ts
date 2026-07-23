@@ -132,7 +132,17 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    return NextResponse.json({ success: true, data: payment }, { status: 201 })
+    // Populated with the just-updated balanceDue/paymentStatus (not the
+    // pre-payment snapshot still held by the `order` variable above) — the
+    // receipt UI's "Record Another Payment" CTA and the receipt's Order/
+    // Client fields both read this response directly, so it must reflect
+    // the real post-payment state, not require a second round trip.
+    const populatedPayment = await Payment.findById(payment._id)
+      .populate('order', 'orderNumber totalAmount advancePaid balanceDue paymentStatus')
+      .populate('client', 'companyName')
+      .lean()
+
+    return NextResponse.json({ success: true, data: populatedPayment }, { status: 201 })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })

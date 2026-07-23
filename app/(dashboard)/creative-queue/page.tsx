@@ -5,7 +5,7 @@ import { CreativeHeader } from '@/components/creative/CreativeHeader'
 import { CreativeBoard } from '@/components/creative/CreativeBoard'
 import { CreativeDetailDrawer } from '@/components/creative/CreativeDetailDrawer'
 import { useAuth } from '@/hooks/useAuth'
-import type { IOrder } from '@/types'
+import type { IActivityLog, IOrder } from '@/types'
 
 export default function CreativeQueuePage() {
   const { user } = useAuth()
@@ -21,6 +21,7 @@ export default function CreativeQueuePage() {
 
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null)
+  const [logs, setLogs] = useState<IActivityLog[]>([])
   const [detailLoading, setDetailLoading] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -57,7 +58,10 @@ export default function CreativeQueuePage() {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
       if (latestOrderIdRef.current !== id) return
-      if (data.success) setSelectedOrder(data.data.order)
+      if (data.success) {
+        setSelectedOrder(data.data.order)
+        setLogs(data.data.logs)
+      }
     } finally {
       if (latestOrderIdRef.current === id) setDetailLoading(false)
     }
@@ -109,6 +113,7 @@ export default function CreativeQueuePage() {
       <CreativeDetailDrawer
         open={drawerOpen}
         order={selectedOrder}
+        logs={logs}
         loading={detailLoading}
         isAdmin={user?.role === 'admin'}
         currentUserId={user?.id}

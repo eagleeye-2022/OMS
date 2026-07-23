@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { OrderHeaderCard } from './OrderHeaderCard'
+import { OrderSummarySentence } from './OrderSummarySentence'
+import { OrderClientInfoCard } from './OrderClientInfoCard'
 import { OrderProgressStepper } from './OrderProgressStepper'
 import { OrderSpecsCard } from './OrderSpecsCard'
 import { OrderFinanceCard } from './OrderFinanceCard'
@@ -108,6 +110,8 @@ export function OrderDetailPanel({ order, logs, loading, role, hasAnyOrders = tr
   return (
     <div className="flex-1 w-full space-y-5 min-w-0">
       <OrderHeaderCard order={order} canEdit={canEditCore} onEdit={onEdit} />
+      <OrderSummarySentence order={order} />
+      <OrderClientInfoCard order={order} />
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Order Lifecycle</p>

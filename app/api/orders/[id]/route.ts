@@ -109,9 +109,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       existing.designStatus = parsed.data.designStatus
       if (parsed.data.creativeRemarks !== undefined) existing.creativeRemarks = parsed.data.creativeRemarks
-      if (parsed.data.revisionNote) {
-        existing.revisionHistory.push({ note: parsed.data.revisionNote, by: session.name, at: new Date() })
-      }
 
       // Server-side auto-advance: client_approved while the order hasn't left
       // the pre-approval zone yet → design_approved. Reuses the same
@@ -150,7 +147,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       } else {
         await ActivityLog.create({
           type: 'order_updated',
-          description: `Design status set to '${parsed.data.designStatus}' on ${existing.orderNumber}`,
+          description: parsed.data.revisionNote
+            ? `Design status set to '${parsed.data.designStatus}' on ${existing.orderNumber} — "${parsed.data.revisionNote}"`
+            : `Design status set to '${parsed.data.designStatus}' on ${existing.orderNumber}`,
           order: id,
           user: session.id,
           userName: session.name,

@@ -27,6 +27,8 @@ export interface ClientProductPreferenceFormValues {
   preferredProductCategory: string
   orderQuantity: string
   orderNote: string
+  totalAmount: string
+  advancePaid: string
 }
 
 export interface ClientFormValues {
@@ -100,7 +102,7 @@ export function emptyClientFormValues(): ClientFormValues {
     escalationContact: { recipientName: '', email: '', mobileNumber: '', address: '' },
     assets: {},
     sharedLinks: { googleDriveFolder: '', dropboxFolder: '', websiteUrl: '', socialMedia: '' },
-    productPreferences: [{ preferredProductCategory: '', orderQuantity: '', orderNote: '' }],
+    productPreferences: [{ preferredProductCategory: '', orderQuantity: '', orderNote: '', totalAmount: '', advancePaid: '' }],
     notes: '',
   }
 }
@@ -167,8 +169,10 @@ export function mapClientToFormValues(client: IClient): ClientFormValues {
           preferredProductCategory: p.preferredProductCategory || '',
           orderQuantity: p.orderQuantity != null ? String(p.orderQuantity) : '',
           orderNote: p.orderNote || '',
+          totalAmount: p.totalAmount != null ? String(p.totalAmount) : '',
+          advancePaid: p.advancePaid != null ? String(p.advancePaid) : '',
         }))
-      : [{ preferredProductCategory: '', orderQuantity: '', orderNote: '' }],
+      : [{ preferredProductCategory: '', orderQuantity: '', orderNote: '', totalAmount: '', advancePaid: '' }],
     notes: client.notes || '',
   }
 }
@@ -181,6 +185,8 @@ export function buildClientPayload(values: ClientFormValues, status: 'draft' | '
       preferredProductCategory: p.preferredProductCategory,
       orderQuantity: p.orderQuantity ? Number(p.orderQuantity) : undefined,
       orderNote: p.orderNote,
+      totalAmount: p.totalAmount ? Number(p.totalAmount) : undefined,
+      advancePaid: p.advancePaid ? Number(p.advancePaid) : undefined,
     }))
 
   return {

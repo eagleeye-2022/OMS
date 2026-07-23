@@ -82,7 +82,7 @@ export function OrderFinanceCard({ order, onPaymentLogged }: OrderFinanceCardPro
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pricing & Payments</h3>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment Details</h3>
         {order.paymentStatus && (
           <Badge label={order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)} className={PAYMENT_STATUS_COLOR[order.paymentStatus as PaymentStatus]} />
         )}

@@ -6,7 +6,7 @@ import { ProductionSummaryCards } from '@/components/production/ProductionSummar
 import { ProductionQueueTable } from '@/components/production/ProductionQueueTable'
 import { ProductionDetailDrawer } from '@/components/production/ProductionDetailDrawer'
 import { useAuth } from '@/hooks/useAuth'
-import type { IOrder } from '@/types'
+import type { IActivityLog, IOrder } from '@/types'
 
 export default function ProductionPage() {
   const { user } = useAuth()
@@ -21,6 +21,7 @@ export default function ProductionPage() {
 
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null)
+  const [logs, setLogs] = useState<IActivityLog[]>([])
   const [detailLoading, setDetailLoading] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -61,7 +62,10 @@ export default function ProductionPage() {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
       if (latestOrderIdRef.current !== id) return
-      if (data.success) setSelectedOrder(data.data.order)
+      if (data.success) {
+        setSelectedOrder(data.data.order)
+        setLogs(data.data.logs)
+      }
     } finally {
       if (latestOrderIdRef.current === id) setDetailLoading(false)
     }
@@ -115,6 +119,7 @@ export default function ProductionPage() {
       <ProductionDetailDrawer
         open={drawerOpen}
         order={selectedOrder}
+        logs={logs}
         loading={detailLoading}
         isAdmin={isAdmin}
         canEditStages={canEditStages}

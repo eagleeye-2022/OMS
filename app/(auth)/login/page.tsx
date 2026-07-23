@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShieldCheck, Factory, ShoppingBag, Calculator, Palette, ArrowLeft } from 'lucide-react'
+import { ShieldCheck, Factory, ShoppingBag, Calculator, Palette, Truck, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
@@ -169,6 +169,22 @@ export default function LoginPage() {
               <p className="font-medium text-gray-900">{ROLE_LABEL[role]}</p>
             </button>
           ))}
+          {/* Not a real Role — there is no shipping account/permission set
+              yet (Shipping is a module today, reachable by admin/sales/
+              accounting/operations, not its own login role). Shown disabled
+              so the team can see it's planned without it being clickable or
+              needing a fake account to back it. Wire this up as a normal
+              LOGIN_ROLES entry once a real shipping role/roster exists. */}
+          <div
+            className="flex items-center gap-3 p-4 text-left border border-gray-200 rounded-lg bg-gray-50 opacity-60 cursor-not-allowed"
+            title="Shipping accounts aren't set up yet"
+          >
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-400 text-white shrink-0"><Truck size={20} /></div>
+            <div>
+              <p className="font-medium text-gray-500">Shipping</p>
+              <p className="text-xs text-gray-400">Coming soon</p>
+            </div>
+          </div>
         </div>
       </AuthLayout>
     )
@@ -240,7 +256,7 @@ export default function LoginPage() {
         <Input
           label="Enter your email address"
           type="email"
-          placeholder="you@untitledstore.com"
+          placeholder="you@company.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required

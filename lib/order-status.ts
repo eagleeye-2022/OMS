@@ -85,9 +85,6 @@ export async function applyDirectStatusUpdate(
 
   const prevStatus = existing.status
   existing.status = parsed.data.status
-  if (parsed.data.revisionNote) {
-    existing.revisionHistory.push({ note: parsed.data.revisionNote, by: session.name, at: new Date() })
-  }
   if (parsed.data.status === 'delayed') {
     existing.delayReason = parsed.data.delayReason
   } else if (prevStatus === 'delayed') {
@@ -100,7 +97,9 @@ export async function applyDirectStatusUpdate(
     const tasks: Promise<unknown>[] = [
       ActivityLog.create({
         type: 'status_changed',
-        description: `Order ${existing.orderNumber} moved to '${parsed.data.status}'`,
+        description: parsed.data.revisionNote
+          ? `Order ${existing.orderNumber} moved to '${parsed.data.status}' — "${parsed.data.revisionNote}"`
+          : `Order ${existing.orderNumber} moved to '${parsed.data.status}'`,
         order: existing._id,
         user: session.id,
         userName: session.name,

@@ -4,14 +4,17 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { CreativeDetailHeader } from './CreativeDetailHeader'
 import { CreativeAssigneeCard } from './CreativeAssigneeCard'
-import { CreativeOrderSummaryCard } from './CreativeOrderSummaryCard'
 import { CreativeFilesCard } from './CreativeFilesCard'
 import { CreativeRemarksCard } from './CreativeRemarksCard'
-import { CreativeRevisionLogCard } from './CreativeRevisionLogCard'
-import type { IOrder, IUser } from '@/types'
+import { OrderSummarySentence } from '@/components/orders/OrderSummarySentence'
+import { OrderClientInfoCard } from '@/components/orders/OrderClientInfoCard'
+import { OrderSpecsCard } from '@/components/orders/OrderSpecsCard'
+import { OrderTimelineCard } from '@/components/orders/OrderTimelineCard'
+import type { IActivityLog, IOrder, IUser } from '@/types'
 
 interface CreativeDetailPageProps {
   order: IOrder | null
+  logs: IActivityLog[]
   loading: boolean
   isAdmin: boolean
   currentUserId?: string
@@ -25,7 +28,7 @@ interface CreativeDetailPageProps {
  * drawer (via CreativeDetailDrawer) and the standalone /creative-queue/[id]
  * route, matching the two-view pattern used by the Client and Order modules.
  */
-export function CreativeDetailPage({ order, loading, isAdmin, currentUserId, isCreativeRole, onUpdated, onClose }: CreativeDetailPageProps) {
+export function CreativeDetailPage({ order, logs, loading, isAdmin, currentUserId, isCreativeRole, onUpdated, onClose }: CreativeDetailPageProps) {
   if (loading) return <PageLoader />
 
   if (!order) {
@@ -45,11 +48,13 @@ export function CreativeDetailPage({ order, loading, isAdmin, currentUserId, isC
   return (
     <div className="space-y-5">
       <CreativeDetailHeader order={order} canEdit={isOwnOrder} onUpdated={onUpdated} onClose={onClose} />
+      <OrderSummarySentence order={order} />
+      <OrderClientInfoCard order={order} />
       <CreativeAssigneeCard order={order} canEdit={isAdmin} currentUserId={currentUserId} isCreativeRole={isCreativeRole} onUpdated={onUpdated} />
-      <CreativeOrderSummaryCard order={order} />
+      <OrderSpecsCard order={order} />
       <CreativeFilesCard order={order} canEdit={isOwnOrder} onUpdated={onUpdated} />
       <CreativeRemarksCard order={order} onUpdated={onUpdated} />
-      <CreativeRevisionLogCard revisionHistory={order.revisionHistory} />
+      <OrderTimelineCard logs={logs} title="Design Timeline" />
     </div>
   )
 }

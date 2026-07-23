@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Link2, Printer, RotateCcw } from 'lucide-react'
+import { Download, Printer, RotateCcw } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -42,11 +42,6 @@ export function InvoicePreviewModal({ order, onClose, onReplace, onUpdated }: In
     } finally {
       setSaving(false)
     }
-  }
-
-  const copyLink = async () => {
-    const text = `${invoice.invoiceNumber} — ${order.orderNumber} — ${client?.companyName} — ${formatCurrency(grandTotal)}`
-    try { await navigator.clipboard.writeText(text) } catch { /* clipboard unavailable */ }
   }
 
   return (
@@ -114,8 +109,13 @@ export function InvoicePreviewModal({ order, onClose, onReplace, onUpdated }: In
             {invoice.cgstPercent ? <div className="flex justify-between"><span className="text-gray-500">CGST {invoice.cgstPercent}%</span><span>{formatCurrency(invoice.amount * invoice.cgstPercent / 100)}</span></div> : null}
             {invoice.sgstPercent ? <div className="flex justify-between"><span className="text-gray-500">SGST {invoice.sgstPercent}%</span><span>{formatCurrency(invoice.amount * invoice.sgstPercent / 100)}</span></div> : null}
             <div className="flex justify-between font-bold text-gray-900 pt-1 border-t border-gray-200"><span>Total</span><span>{formatCurrency(grandTotal)}</span></div>
-            <div className="flex justify-between text-blue-600"><span>Advance Paid</span><span>-{formatCurrency(advancePaid)}</span></div>
-            <div className="flex justify-between font-bold text-red-600"><span>Balance Due</span><span>{formatCurrency(balanceDue)}</span></div>
+            <div className="flex justify-between text-green-600"><span>Amount Paid</span><span>{formatCurrency(advancePaid)}</span></div>
+            {/* An invoice can no longer be created or edited (see PATCH
+                /api/orders/[id]/invoice) while this would be positive — this
+                only ever renders for an invoice that predates that guard. */}
+            {balanceDue > 0 && (
+              <div className="flex justify-between font-bold text-red-600"><span>Balance Due</span><span>{formatCurrency(balanceDue)}</span></div>
+            )}
           </div>
 
           <p className="text-sm text-gray-600 italic mt-8">&quot;Thank you for your business&quot;</p>
@@ -139,7 +139,6 @@ export function InvoicePreviewModal({ order, onClose, onReplace, onUpdated }: In
           <p className="text-sm text-gray-500 -mt-2">{client?.companyName} · {order.orderNumber}</p>
 
           <Button icon={<Download size={14} />} onClick={() => window.print()}>Download PDF</Button>
-          <Button variant="outline" icon={<Link2 size={14} />} onClick={copyLink}>Copy Invoice Link</Button>
           <Button variant="outline" icon={<Printer size={14} />} onClick={() => window.print()}>Print Invoice</Button>
 
           <div className="flex items-center justify-between mt-2 pt-3 border-t border-gray-100">

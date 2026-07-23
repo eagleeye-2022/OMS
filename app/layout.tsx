@@ -5,7 +5,7 @@ import './globals.css'
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist-sans' })
 
 export const metadata: Metadata = {
-  title: 'The Untitled Store — OMS',
+  title: 'Bloopers x merchtalk — OMS',
   description: 'Order Management System for bulk printing operations',
 }
 

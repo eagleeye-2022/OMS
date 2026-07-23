@@ -1,20 +1,23 @@
 'use client'
 
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Cloud, ExternalLink } from 'lucide-react'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { getProductionBlockReason } from '@/lib/constants'
 import { ProductionDetailHeader } from './ProductionDetailHeader'
 import { ProductionAssigneeCard } from './ProductionAssigneeCard'
-import { ProductionOrderSummaryCard } from './ProductionOrderSummaryCard'
 import { ProductionStageProgressCard } from './ProductionStageProgressCard'
 import { ProductionChecklistCard } from './ProductionChecklistCard'
 import { ProductionRemarksCard } from './ProductionRemarksCard'
-import { ProductionHistoryCard } from './ProductionHistoryCard'
-import type { IOrder, IUser, OrderStatus } from '@/types'
+import { OrderSummarySentence } from '@/components/orders/OrderSummarySentence'
+import { OrderClientInfoCard } from '@/components/orders/OrderClientInfoCard'
+import { OrderSpecsCard } from '@/components/orders/OrderSpecsCard'
+import { OrderTimelineCard } from '@/components/orders/OrderTimelineCard'
+import type { IActivityLog, IOrder, IUser, OrderStatus } from '@/types'
 
 interface ProductionDetailPageProps {
   order: IOrder | null
+  logs: IActivityLog[]
   loading: boolean
   isAdmin: boolean
   canEditStages: boolean
@@ -28,7 +31,7 @@ interface ProductionDetailPageProps {
  * drawer (via ProductionDetailDrawer) and the standalone /production/[id]
  * route, matching the drawer+page duality proven for Clients/Orders/Creative.
  */
-export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, currentUserId, onUpdated, onClose }: ProductionDetailPageProps) {
+export function ProductionDetailPage({ order, logs, loading, isAdmin, canEditStages, currentUserId, onUpdated, onClose }: ProductionDetailPageProps) {
   if (loading) return <PageLoader />
 
   if (!order) {
@@ -56,9 +59,13 @@ export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, c
   const isOwnOrder = isAdmin || assigneeId === currentUserId
   const effectiveCanEditStages = canEditStages && isOwnOrder
 
+  const assetsFolder = order.assets.find((a) => a.kind === 'drive_link')
+
   return (
     <div className="space-y-5">
       <ProductionDetailHeader order={order} onClose={onClose} />
+      <OrderSummarySentence order={order} />
+      <OrderClientInfoCard order={order} />
 
       {blockReason && (
         <div className="flex items-start gap-2 px-3 py-2.5 bg-red-50 border border-red-100 rounded-lg text-sm text-red-700">
@@ -71,7 +78,17 @@ export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, c
       )}
 
       <ProductionAssigneeCard order={order} canEdit={isAdmin} onUpdated={onUpdated} />
-      <ProductionOrderSummaryCard order={order} />
+      <OrderSpecsCard order={order} />
+      {assetsFolder && (
+        <a
+          href={assetsFolder.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 -mt-2 text-sm text-blue-600 hover:underline"
+        >
+          <Cloud size={15} /> {assetsFolder.label} <ExternalLink size={12} />
+        </a>
+      )}
       <ProductionStageProgressCard order={order} canEdit={effectiveCanEditStages && !productionBlocked} onUpdated={onUpdated} />
       <ProductionChecklistCard order={order} canComplete={effectiveCanEditStages && !productionBlocked} onCompleted={onUpdated} />
 
@@ -85,7 +102,7 @@ export function ProductionDetailPage({ order, loading, isAdmin, canEditStages, c
       )}
 
       <ProductionRemarksCard order={order} onUpdated={onUpdated} />
-      <ProductionHistoryCard revisionHistory={order.revisionHistory} />
+      <OrderTimelineCard logs={logs} title="Production Timeline" />
     </div>
   )
 }

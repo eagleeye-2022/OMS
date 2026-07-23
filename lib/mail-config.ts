@@ -107,7 +107,7 @@ export function getMailConfig(): MailConfig & { diagnostics: MailConfigDiagnosti
 
   return {
     provider,
-    from: process.env.MAIL_FROM || 'The Untitled Store <no-reply@untitledstore.com>',
+    from: process.env.MAIL_FROM || 'Bloopers x merchtalk <no-reply@untitledstore.com>',
     smtp,
     diagnostics: { provider, smtpConfigured: !!smtp, ...diagnostics },
   }

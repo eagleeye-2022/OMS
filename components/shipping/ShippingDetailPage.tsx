@@ -4,13 +4,15 @@ import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ShippingDetailHeader } from './ShippingDetailHeader'
 import { ShippingDeliveryAddressCard } from './ShippingDeliveryAddressCard'
-import { ShippingOrderSummaryCard } from './ShippingOrderSummaryCard'
 import { ShippingCourierCard } from './ShippingCourierCard'
 import { ShippingStatusActionsCard } from './ShippingStatusActionsCard'
 import { ShippingTrackingTimelineCard } from './ShippingTrackingTimelineCard'
 import { ShippingNotesCard } from './ShippingNotesCard'
 import { ShippingAssignedTeamCard } from './ShippingAssignedTeamCard'
 import { ShippingPaymentsCard } from './ShippingPaymentsCard'
+import { OrderSummarySentence } from '@/components/orders/OrderSummarySentence'
+import { OrderClientInfoCard } from '@/components/orders/OrderClientInfoCard'
+import { OrderSpecsCard } from '@/components/orders/OrderSpecsCard'
 import type { IActivityLog, IOrder } from '@/types'
 
 interface ShippingDetailPageProps {
@@ -38,8 +40,10 @@ export function ShippingDetailPage({ order, logs, loading, canEditShipping, isAd
   return (
     <div className="space-y-5">
       <ShippingDetailHeader order={order} onClose={onClose} />
+      <OrderSummarySentence order={order} />
+      <OrderClientInfoCard order={order} />
       <ShippingDeliveryAddressCard order={order} />
-      <ShippingOrderSummaryCard order={order} />
+      <OrderSpecsCard order={order} />
       <ShippingCourierCard order={order} canEdit={canEditShipping} onUpdated={onUpdated} />
       <ShippingStatusActionsCard order={order} canUpdateStatus={canEditShipping} isAdmin={isAdmin} onUpdated={onUpdated} />
       <ShippingTrackingTimelineCard logs={logs} />

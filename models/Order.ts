@@ -95,7 +95,6 @@ export interface IOrderDocument extends Document {
   assets: IOrderAsset[]
   creativeRemarks?: string
   productionRemarks?: string
-  revisionHistory: { note: string; by: string; at: Date }[]
   assignedTeam: IAssignedTeam
   createdBy: Types.ObjectId
 }
@@ -233,13 +232,6 @@ const OrderSchema = new Schema<IOrderDocument>(
     assets: { type: [OrderAssetSchema], default: [] },
     creativeRemarks: { type: String },
     productionRemarks: { type: String },
-    revisionHistory: [
-      {
-        note: String,
-        by: String,
-        at: { type: Date, default: Date.now },
-      },
-    ],
     assignedTeam: { type: AssignedTeamSchema, default: () => ({}) },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   },

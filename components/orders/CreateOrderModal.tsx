@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useForm, type UseFormRegisterReturn } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { UserPlus2 } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, Textarea } from '@/components/ui/Input'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 import { ClientWizard } from '@/components/clients/ClientWizard'
 import { PRODUCT_CATEGORIES, PRIORITY_LABEL } from '@/lib/constants'
 import { orderSchema, updateOrderCoreSchema } from '@/validations/order.schema'
@@ -13,24 +14,6 @@ import { emptyOrderFormValues, mapOrderToFormValues, buildCreateOrderPayload, bu
 import type { IClient, IOrder } from '@/types'
 
 const PRIORITY_OPTIONS = Object.entries(PRIORITY_LABEL).map(([value, label]) => ({ value, label }))
-
-/** ₹-prefixed number input — mirrors the pattern already used for money fields in RecordPaymentForm/StepBillingDetails. */
-function CurrencyField({ label, required, error, registration }: { label: string; required?: boolean; error?: string; registration: UseFormRegisterReturn }) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-gray-700">{label}{required && ' *'}</label>
-      <div className="relative mt-1">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
-        <input
-          type="number" min={0} step="0.01"
-          className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          {...registration}
-        />
-      </div>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-    </div>
-  )
-}
 
 interface CreateOrderModalProps {
   open: boolean

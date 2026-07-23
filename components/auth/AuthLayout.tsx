@@ -17,7 +17,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
           <div className="flex items-center justify-center w-9 h-9 bg-red-500 rounded-lg shrink-0">
             <Package size={18} className="text-white" />
           </div>
-          <span className="font-bold text-gray-900">The Untitled Store</span>
+          <span className="font-bold text-gray-900">Bloopers x merchtalk</span>
         </Link>
       </div>
 
@@ -27,7 +27,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
             {title && (
               <>
                 <p className="text-sm text-gray-500 mb-1">
-                  Welcome to <span className="text-blue-600 font-semibold">The Untitled Store</span>
+                  Welcome to <span className="text-blue-600 font-semibold">Bloopers x merchtalk</span>
                 </p>
                 <h1 className="text-3xl font-bold text-gray-900 mb-6">{title}</h1>
               </>

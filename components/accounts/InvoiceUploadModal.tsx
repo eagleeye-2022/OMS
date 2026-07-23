@@ -98,7 +98,22 @@ export function InvoiceUploadModal({ order, onClose, onSaved }: InvoiceUploadMod
     setError('')
     setFile(f)
     if (!invoiceNumber) setInvoiceNumber(`INV-${order.orderNumber.replace('ORD-', '')}`)
-    if (!amount) setAmount(String(order.totalAmount ?? ''))
+    // order.totalAmount is what the client actually agreed to pay and what
+    // payments are collected against (see RecordPaymentForm/POST
+    // /api/payments — both cap at order.totalAmount, there is no separate
+    // "plus GST" collection step). So it must be treated as GST-inclusive
+    // here: the invoice's line amount is the taxable value backed *out* of
+    // it, not order.totalAmount with GST stacked on top — the latter was
+    // exactly what silently manufactured a "Balance Due" on invoices that
+    // real accounts staff never actually asked the client to pay. Floored
+    // (not rounded) so amount + GST never exceeds order.totalAmount even
+    // after the GST line's own rounding, matching PATCH
+    // /api/orders/[id]/invoice's server-side guard exactly.
+    if (!amount && order.totalAmount != null) {
+      const gstRate = ((Number(cgstPercent) || 0) + (Number(sgstPercent) || 0)) / 100
+      const taxableValue = gstRate > 0 ? Math.floor(order.totalAmount / (1 + gstRate)) : order.totalAmount
+      setAmount(String(taxableValue))
+    }
   }
 
   const submit = async (e: React.FormEvent) => {

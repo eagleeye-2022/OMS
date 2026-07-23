@@ -26,7 +26,7 @@ export const CAN_VIEW_SHIPPING: Role[] = ['admin', 'sales', 'accounting', 'opera
 // notifications, payments) intentionally keep the narrower 'companyName'
 // projection — they never render an address or GST block.
 export const ORDER_CLIENT_DETAIL_FIELDS =
-  'companyName email phone contactPersonName designation billingAddress shippingAddress sameAsBilling gstNumber invoiceRecipientName invoiceEmail'
+  'companyName clientCode email phone contactPersonName designation billingAddress shippingAddress sameAsBilling gstNumber invoiceRecipientName invoiceEmail'
 
 // Client sub-fields that carry address/GST/billing detail — only meaningful
 // to the roles that actually ship or bill the order. Stripped from the

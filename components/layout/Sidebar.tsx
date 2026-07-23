@@ -57,7 +57,7 @@ export function Sidebar({ user, onLogout }: SidebarProps) {
           <div className="w-7 h-7 bg-red-500 rounded flex items-center justify-center">
             <Package size={14} className="text-white" />
           </div>
-          <span className="text-sm font-bold text-gray-900 uppercase tracking-wider">Untitled</span>
+          <span className="text-sm font-bold text-gray-900 leading-tight">Bloopers x merchtalk</span>
         </div>
       </div>
 

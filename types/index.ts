@@ -68,6 +68,8 @@ export interface IProductPreference {
   preferredProductCategory: string
   orderQuantity: number
   orderNote: string
+  totalAmount?: number
+  advancePaid?: number
 }
 
 export interface IClient {
@@ -117,12 +119,6 @@ export interface IClient {
   activeOrders?: number
   lifetimeBusiness?: number
   lastOrderDate?: string | null
-}
-
-export interface RevisionEntry {
-  note: string
-  by: string
-  at: string
 }
 
 export interface IOrderNote {
@@ -228,7 +224,6 @@ export interface IOrder {
   assets: IOrderAsset[]
   creativeRemarks?: string
   productionRemarks?: string
-  revisionHistory: RevisionEntry[]
   // Genuinely absent (not just empty) until the first team-assignment call —
   // Mongoose's default `{}` for this subdocument gets stripped by `minimize`
   // when saved with no sub-fields set, since order creation never sends this

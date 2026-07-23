@@ -8,6 +8,7 @@ import { orderSchema } from '@/validations/order.schema'
 import { stripSensitiveOrderFields, applyOwnQueueVisibility } from '@/lib/order-visibility'
 import { getDispatchBlockReason } from '@/lib/order-status'
 import { ORDER_STAGE_STATUSES, SHIPPING_RELEVANT_STATUSES } from '@/lib/constants'
+import { getNextOrderNumber, computeOrderMoney } from '@/lib/order-creation'
 
 function mongoError(err: unknown): NextResponse | null {
   const e = err as { code?: number; name?: string; message?: string }
@@ -174,27 +175,9 @@ export async function POST(req: NextRequest) {
 
     await connectDB()
 
-    // Sort by orderNumber's own numeric value (not createdAt) — mirrors
-    // Client.clientCode's proven generation in models/Client.ts. Seed data's
-    // order numbers are NOT monotonic with createdAt (e.g. ORD-2044 has an
-    // older createdAt than ORD-2041), so "most recent by date, then +1" can
-    // and did land back on an already-taken number and 500 on every
-    // subsequent attempt once that collision occurred.
-    const lastOrder = await Order.findOne({ orderNumber: { $exists: true } })
-      .collation({ locale: 'en_US', numericOrdering: true })
-      .sort({ orderNumber: -1 })
-      .select('orderNumber')
-      .lean()
-    let nextNum = 2000
-    if (lastOrder && lastOrder.orderNumber) {
-      const match = lastOrder.orderNumber.match(/\d+/)
-      if (match) nextNum = parseInt(match[0]) + 1
-    }
-    const orderNumber = `ORD-${nextNum}`
-
+    const orderNumber = await getNextOrderNumber()
     const { advancePaid = 0, totalAmount } = parsed.data
-    const balanceDue = totalAmount - advancePaid
-    const paymentStatus = advancePaid >= totalAmount ? 'paid' : advancePaid > 0 ? 'partial' : 'pending'
+    const { balanceDue, paymentStatus } = computeOrderMoney(totalAmount, advancePaid)
 
     const order = await Order.create({
       ...parsed.data,

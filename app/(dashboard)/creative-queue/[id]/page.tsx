@@ -5,12 +5,13 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { CreativeDetailPage } from '@/components/creative/CreativeDetailPage'
 import { useAuth } from '@/hooks/useAuth'
-import type { IOrder } from '@/types'
+import type { IActivityLog, IOrder } from '@/types'
 
 export default function CreativeQueueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { user } = useAuth()
   const [order, setOrder] = useState<IOrder | null>(null)
+  const [logs, setLogs] = useState<IActivityLog[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -18,7 +19,10 @@ export default function CreativeQueueDetailPage({ params }: { params: Promise<{ 
     try {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
-      if (data.success) setOrder(data.data.order)
+      if (data.success) {
+        setOrder(data.data.order)
+        setLogs(data.data.logs)
+      }
     } finally {
       setLoading(false)
     }
@@ -37,6 +41,7 @@ export default function CreativeQueueDetailPage({ params }: { params: Promise<{ 
 
       <CreativeDetailPage
         order={order}
+        logs={logs}
         loading={loading}
         isAdmin={user?.role === 'admin'}
         currentUserId={user?.id}

@@ -28,6 +28,17 @@ export interface IProductPreference {
   preferredProductCategory: string
   orderQuantity: number
   orderNote: string
+  /**
+   * Present only when this preference row was saved as a real first order
+   * (see app/api/clients/route.ts POST — creates one Order per row that has
+   * totalAmount set). Kept on the Client doc too, alongside the Order it
+   * produced, purely so this section can keep rendering from the client
+   * record without a join; the Order document (findable via
+   * order.client === this client's _id) is the actual source of truth for
+   * tracking/status/payments from here on.
+   */
+  totalAmount?: number
+  advancePaid?: number
 }
 
 export interface IClientDocument extends Document {
@@ -114,6 +125,8 @@ const ProductPreferenceSchema = new Schema<IProductPreference>(
     preferredProductCategory: { type: String, required: true },
     orderQuantity: { type: Number, required: true, min: 1 },
     orderNote: { type: String, required: true },
+    totalAmount: { type: Number, min: 0 },
+    advancePaid: { type: Number, min: 0 },
   },
   { _id: false }
 )

@@ -123,7 +123,7 @@ export function ClientDetailPanel({ client, orders, loading, canEdit, canDeactiv
             )}
           </div>
           <p className="text-xs text-gray-400 mb-4">
-            Captured during onboarding for sales reference — not a placed order. Use &quot;Create Order&quot; in the Orders tab to start a real one.
+            Captured during onboarding — each of these was created as a real order, visible below in Order History.
           </p>
           <div className="space-y-3">
             {client.productPreferences.map((p, i) => (

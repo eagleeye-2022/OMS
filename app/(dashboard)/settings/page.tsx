@@ -17,7 +17,7 @@ function SectionCard({ title, children }: { title: string; children: React.React
 export default function SettingsPage() {
   const { user } = useAuthContext()
   const [profile, setProfile] = useState({ name: user?.name || '', email: user?.email || '' })
-  const [business, setBusiness] = useState({ storeName: 'The Untitled Store', gst: '', address: '', phone: '', website: '' })
+  const [business, setBusiness] = useState({ storeName: 'Bloopers x merchtalk', gst: '', address: '', phone: '', website: '' })
   const [saving, setSaving] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const isDev = process.env.NODE_ENV !== 'production'

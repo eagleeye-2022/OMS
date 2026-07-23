@@ -2,6 +2,7 @@
 
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { Input, Select, Textarea } from '@/components/ui/Input'
+import { CurrencyField } from '@/components/ui/CurrencyField'
 import { PREFERRED_PRODUCT_CATEGORIES } from '@/lib/constants'
 import { FileUploadField } from './FileUploadField'
 import type { ClientFormValues } from './types'
@@ -45,7 +46,7 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Order Preferences</h3>
         <p className="text-xs text-gray-400 mb-3">
-          For sales reference only — this does not place an order. Create an actual order for this client from the Orders tab once they&apos;re saved.
+          Each product below is created as a real order once you save this client — it will appear in the Orders list and this client&apos;s Order History, exactly like an order placed from the Orders tab.
         </p>
         <Input label="Expected Delivery Date *" type="date" error={errors.deliveryDate?.message} {...register('deliveryDate')} />
 
@@ -53,7 +54,7 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
           <div key={field.id} className={index > 0 ? 'mt-4 pt-4 border-t border-gray-200' : 'mt-4'}>
             {index > 0 && (
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Additional Preference</h4>
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Additional Order</h4>
                 <button type="button" onClick={() => remove(index)} className="text-xs text-red-600 hover:underline">Remove</button>
               </div>
             )}
@@ -81,6 +82,19 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
                 {...register(`productPreferences.${index}.orderNote`)}
               />
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <CurrencyField
+                label="Total Amount of Order"
+                required
+                error={errors.productPreferences?.[index]?.totalAmount?.message}
+                registration={register(`productPreferences.${index}.totalAmount`)}
+              />
+              <CurrencyField
+                label="Advance Received"
+                error={errors.productPreferences?.[index]?.advancePaid?.message}
+                registration={register(`productPreferences.${index}.advancePaid`)}
+              />
+            </div>
           </div>
         ))}
 
@@ -90,7 +104,7 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
             checked={fields.length > 1}
             onChange={(e) => {
               if (e.target.checked) {
-                append({ preferredProductCategory: '', orderQuantity: '', orderNote: '' })
+                append({ preferredProductCategory: '', orderQuantity: '', orderNote: '', totalAmount: '', advancePaid: '' })
               } else if (fields.length > 1) {
                 // Remove every row except the base row (index 0) in a single
                 // batched operation — looping remove() calls against a stale
@@ -100,7 +114,7 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
               }
             }}
           />
-          Add other product
+          Add another order
         </label>
       </div>
     </div>

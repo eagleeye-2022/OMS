@@ -5,12 +5,13 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { ProductionDetailPage } from '@/components/production/ProductionDetailPage'
 import { useAuth } from '@/hooks/useAuth'
-import type { IOrder } from '@/types'
+import type { IActivityLog, IOrder } from '@/types'
 
 export default function ProductionDetailRoute({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { user } = useAuth()
   const [order, setOrder] = useState<IOrder | null>(null)
+  const [logs, setLogs] = useState<IActivityLog[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -18,7 +19,10 @@ export default function ProductionDetailRoute({ params }: { params: Promise<{ id
     try {
       const res = await fetch(`/api/orders/${id}`)
       const data = await res.json()
-      if (data.success) setOrder(data.data.order)
+      if (data.success) {
+        setOrder(data.data.order)
+        setLogs(data.data.logs)
+      }
     } finally {
       setLoading(false)
     }
@@ -38,7 +42,7 @@ export default function ProductionDetailRoute({ params }: { params: Promise<{ id
         <h1 className="text-xl font-bold text-gray-900">Production Detail</h1>
       </div>
 
-      <ProductionDetailPage order={order} loading={loading} isAdmin={isAdmin} canEditStages={canEditStages} currentUserId={user?.id} onUpdated={load} />
+      <ProductionDetailPage order={order} logs={logs} loading={loading} isAdmin={isAdmin} canEditStages={canEditStages} currentUserId={user?.id} onUpdated={load} />
     </div>
   )
 }
