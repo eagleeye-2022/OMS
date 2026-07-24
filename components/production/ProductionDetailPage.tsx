@@ -1,6 +1,6 @@
 'use client'
 
-import { AlertTriangle, Cloud, ExternalLink } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { PageLoader } from '@/components/ui/LoadingSpinner'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { getProductionBlockReason } from '@/lib/constants'
@@ -9,6 +9,7 @@ import { ProductionAssigneeCard } from './ProductionAssigneeCard'
 import { ProductionStageProgressCard } from './ProductionStageProgressCard'
 import { ProductionChecklistCard } from './ProductionChecklistCard'
 import { ProductionRemarksCard } from './ProductionRemarksCard'
+import { AssetsDocumentsCard } from '@/components/orders/AssetsDocumentsCard'
 import { OrderSummarySentence } from '@/components/orders/OrderSummarySentence'
 import { OrderClientInfoCard } from '@/components/orders/OrderClientInfoCard'
 import { OrderSpecsCard } from '@/components/orders/OrderSpecsCard'
@@ -59,8 +60,6 @@ export function ProductionDetailPage({ order, logs, loading, isAdmin, canEditSta
   const isOwnOrder = isAdmin || assigneeId === currentUserId
   const effectiveCanEditStages = canEditStages && isOwnOrder
 
-  const assetsFolder = order.assets.find((a) => a.kind === 'drive_link')
-
   return (
     <div className="space-y-5">
       <ProductionDetailHeader order={order} onClose={onClose} />
@@ -79,16 +78,13 @@ export function ProductionDetailPage({ order, logs, loading, isAdmin, canEditSta
 
       <ProductionAssigneeCard order={order} canEdit={isAdmin} onUpdated={onUpdated} />
       <OrderSpecsCard order={order} />
-      {assetsFolder && (
-        <a
-          href={assetsFolder.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 -mt-2 text-sm text-blue-600 hover:underline"
-        >
-          <Cloud size={15} /> {assetsFolder.label} <ExternalLink size={12} />
-        </a>
-      )}
+
+      {/* Read-only view of the design files/links Creative uploaded — the same
+          Order.assets set Creative sees, surfaced here (thumbnails + links) so
+          Production can manufacture from the approved artwork. canEdit=false:
+          Production reviews these, it doesn't add or remove them. */}
+      <AssetsDocumentsCard order={order} canEdit={false} onUpdated={onUpdated} title="Design Files" />
+
       <ProductionStageProgressCard order={order} canEdit={effectiveCanEditStages && !productionBlocked} onUpdated={onUpdated} />
       <ProductionChecklistCard order={order} canComplete={effectiveCanEditStages && !productionBlocked} onCompleted={onUpdated} />
 

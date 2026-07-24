@@ -10,6 +10,7 @@ import { OrderSummarySentence } from '@/components/orders/OrderSummarySentence'
 import { OrderClientInfoCard } from '@/components/orders/OrderClientInfoCard'
 import { OrderSpecsCard } from '@/components/orders/OrderSpecsCard'
 import { OrderTimelineCard } from '@/components/orders/OrderTimelineCard'
+import { isCreativeStatusLocked } from '@/lib/constants'
 import type { IActivityLog, IOrder, IUser } from '@/types'
 
 interface CreativeDetailPageProps {
@@ -45,9 +46,16 @@ export function CreativeDetailPage({ order, logs, loading, isAdmin, currentUserI
   const assigneeId = assignee ? (typeof assignee === 'string' ? assignee : assignee._id) : ''
   const isOwnOrder = isAdmin || (Boolean(isCreativeRole) && assigneeId === currentUserId)
 
+  // Bug-4 lock: once Production has moved the order into 'in_production' or
+  // beyond, a Creative user can no longer change the design status (mirrors the
+  // server guard in app/api/orders/[id]/route.ts). Admin is exempt. Uploads and
+  // remarks stay editable — only the status control is locked.
+  const statusLockedForCreative = Boolean(isCreativeRole) && !isAdmin && isCreativeStatusLocked(order.status)
+  const canEditStatus = isOwnOrder && !statusLockedForCreative
+
   return (
     <div className="space-y-5">
-      <CreativeDetailHeader order={order} canEdit={isOwnOrder} onUpdated={onUpdated} onClose={onClose} />
+      <CreativeDetailHeader order={order} canEdit={canEditStatus} statusLocked={statusLockedForCreative} onUpdated={onUpdated} onClose={onClose} />
       <OrderSummarySentence order={order} />
       <OrderClientInfoCard order={order} />
       <CreativeAssigneeCard order={order} canEdit={isAdmin} currentUserId={currentUserId} isCreativeRole={isCreativeRole} onUpdated={onUpdated} />

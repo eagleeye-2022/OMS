@@ -1,7 +1,8 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { FileText, ExternalLink, Plus, Upload, Loader2 } from 'lucide-react'
+import Image from 'next/image'
+import { FileText, ExternalLink, Plus, Upload, Loader2, Cloud } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile } from '@/lib/upload'
@@ -112,17 +113,44 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
         {order.assets.length === 0 ? (
           <p className="text-sm text-gray-400">No assets added yet.</p>
         ) : (
-          order.assets.map((asset, i) => (
-            <div key={i} className="flex items-center justify-between gap-2 text-sm">
-              <div className="flex items-center gap-2 min-w-0">
-                <FileText size={15} className="text-gray-400 shrink-0" />
-                <span className="text-gray-800 truncate">{asset.label}</span>
-              </div>
-              <a href={asset.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline text-xs shrink-0">
-                {asset.kind === 'drive_link' ? 'Google Drive' : 'View'} <ExternalLink size={11} />
+          order.assets.map((asset, i) => {
+            const isImage = asset.kind === 'file' && !!asset.mimeType?.startsWith('image/')
+            return (
+              <a
+                key={i}
+                href={asset.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-between gap-2 text-sm rounded-lg px-1.5 py-1 -mx-1.5 hover:bg-gray-50"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {isImage ? (
+                    // Blob URLs aren't in next.config's image domains, so use
+                    // `unoptimized` (same approach as clients/FileUploadField)
+                    // to render the raw file directly as a thumbnail.
+                    <Image
+                      src={asset.url}
+                      alt={asset.label}
+                      width={40}
+                      height={40}
+                      unoptimized
+                      className="h-10 w-10 rounded-md object-cover border border-gray-200 shrink-0"
+                    />
+                  ) : (
+                    <span className="h-10 w-10 rounded-md bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0">
+                      {asset.kind === 'drive_link'
+                        ? <Cloud size={16} className="text-gray-400" />
+                        : <FileText size={16} className="text-gray-400" />}
+                    </span>
+                  )}
+                  <span className="text-gray-800 truncate group-hover:underline">{asset.label}</span>
+                </div>
+                <span className="flex items-center gap-1 text-blue-600 text-xs shrink-0">
+                  {asset.kind === 'drive_link' ? 'Google Drive' : isImage ? 'View' : 'Open'} <ExternalLink size={11} />
+                </span>
               </a>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </div>

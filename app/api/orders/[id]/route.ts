@@ -13,7 +13,7 @@ import {
   updateShippingDetailsSchema,
 } from '@/validations/order.schema'
 import { applyDirectStatusUpdate, getDispatchBlockReason } from '@/lib/order-status'
-import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES } from '@/lib/constants'
+import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES, isCreativeStatusLocked } from '@/lib/constants'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS, canViewOrderDetail, isOrderAssignedToSelf, filterActivityLogsForRole } from '@/lib/order-visibility'
 import { PRODUCTION_STAGE_KEY_LABEL, type ProductionStage } from '@/lib/constants'
 
@@ -105,6 +105,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const parsed = updateDesignStatusSchema.safeParse(body)
       if (!parsed.success) {
         return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
+      }
+
+      // Once Production has taken the order into 'in_production' or beyond,
+      // Creative can no longer change the design status (Production owns the
+      // workflow from here). Admin is exempt. A no-op save that keeps the same
+      // designStatus (e.g. Creative only updating remarks) is still allowed —
+      // only an actual status change is blocked.
+      if (
+        role === 'creative' &&
+        isCreativeStatusLocked(existing.status) &&
+        parsed.data.designStatus !== existing.designStatus
+      ) {
+        return NextResponse.json(
+          { success: false, error: 'Design status cannot be changed after production has started.' },
+          { status: 409 }
+        )
       }
 
       existing.designStatus = parsed.data.designStatus

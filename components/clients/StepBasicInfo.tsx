@@ -48,7 +48,7 @@ export function StepBasicInfo() {
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Shipping Address</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="PIN Code *" error={errors.shippingAddress?.pinCode?.message} {...register('shippingAddress.pinCode')} />
+          <Input label="PIN Code" error={errors.shippingAddress?.pinCode?.message} {...register('shippingAddress.pinCode')} />
           <Input label="City" error={errors.shippingAddress?.city?.message} {...register('shippingAddress.city')} />
           <Input label="State" error={errors.shippingAddress?.state?.message} {...register('shippingAddress.state')} />
           <Input label="Country" error={errors.shippingAddress?.country?.message} {...register('shippingAddress.country')} />
@@ -61,7 +61,7 @@ export function StepBasicInfo() {
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Billing Address</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="PIN Code *" disabled={billingSameAsShipping} error={errors.billingAddress?.pinCode?.message} {...register('billingAddress.pinCode')} />
+          <Input label="PIN Code" disabled={billingSameAsShipping} error={errors.billingAddress?.pinCode?.message} {...register('billingAddress.pinCode')} />
           <Input label="City" disabled={billingSameAsShipping} error={errors.billingAddress?.city?.message} {...register('billingAddress.city')} />
           <Input label="State" disabled={billingSameAsShipping} error={errors.billingAddress?.state?.message} {...register('billingAddress.state')} />
           <Input label="Country" disabled={billingSameAsShipping} error={errors.billingAddress?.country?.message} {...register('billingAddress.country')} />

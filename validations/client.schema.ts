@@ -5,7 +5,10 @@ const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/
 const optionalUrl = z.url('Must be a valid URL').optional().or(z.literal(''))
 
 const addressSchema = z.object({
-  pinCode: z.string().min(1, 'PIN code is required'),
+  // PIN code is optional for the current client flow (was previously required).
+  // Left as its own schema (rather than folding into partialAddressSchema) so
+  // the two can diverge again if a future flow needs a stricter address.
+  pinCode: z.string().optional().or(z.literal('')),
   city: z.string().optional().or(z.literal('')),
   state: z.string().optional().or(z.literal('')),
   country: z.string().optional().or(z.literal('')),
@@ -162,7 +165,9 @@ export const clientSchema = z
     preferredPaymentMode: z.enum(['bank_transfer', 'upi', 'cheque', 'cash']).optional(),
     typicalOrderValue: requiredTypicalOrderValue,
     invoiceRecipientName: z.string().min(1, 'Invoice recipient name is required'),
-    invoiceEmail: z.string().email('Invalid invoice email'),
+    // Invoice email is optional for the current client flow. When present it
+    // must still be a valid email; empty string / omitted are both accepted.
+    invoiceEmail: z.string().email('Invalid invoice email').optional().or(z.literal('')),
     deliveryDate: z.string().min(1, 'Delivery date is required'),
     escalationContact: escalationContactSchema,
     assets: z.object({
@@ -226,7 +231,9 @@ export const clientStep2Schema = z
     customPaymentTerms: z.string().optional().or(z.literal('')),
     typicalOrderValue: requiredTypicalOrderValue,
     invoiceRecipientName: z.string().min(1, 'Invoice recipient name is required'),
-    invoiceEmail: z.string().email('A valid invoice email is required'),
+    // Optional — matches clientSchema.invoiceEmail. A wrong-format entry still
+    // fails; blank passes so the step-2 "Continue" gate no longer blocks on it.
+    invoiceEmail: z.string().email('Invalid invoice email').optional().or(z.literal('')),
     escalationContact: escalationContactSchema,
   })
   .superRefine((data, ctx) => {

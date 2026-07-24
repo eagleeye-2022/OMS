@@ -47,6 +47,22 @@ export const CLOSED_ORDER_STATUSES: OrderStatus[] = ['delivered', 'cancelled']
 // can share the exact same definition of "not ready for production."
 export const PRE_DESIGN_APPROVAL_STATUSES: OrderStatus[] = ['pending', 'design_review']
 
+// Once Production has taken an order into 'in_production' or any later
+// production/shipping/delivery stage, the Creative team can no longer change
+// its design status — Production owns the workflow from here, and a
+// conflicting status change from Creative would create confusing, contradictory
+// state. Admin is never blocked (callers gate on role === 'creative' before
+// consulting this). Shared by the server guard (designStatus intent in
+// app/api/orders/[id]/route.ts) and the Creative UI (CreativeStatusControl via
+// CreativeDetailPage) so the UI never offers a change the API would reject.
+export const CREATIVE_STATUS_LOCK_STATUSES: OrderStatus[] = [
+  'in_production', 'quality_check', 'shipping_ready', 'dispatched', 'in_transit', 'delivered',
+]
+
+export function isCreativeStatusLocked(status: OrderStatus): boolean {
+  return CREATIVE_STATUS_LOCK_STATUSES.includes(status)
+}
+
 export const DESIGN_STATUS = {
   PENDING: 'pending',
   IN_PROGRESS: 'in_progress',

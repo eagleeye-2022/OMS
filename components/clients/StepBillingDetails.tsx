@@ -90,7 +90,7 @@ export function StepBillingDetails() {
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-2">Invoicing Preferences</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input label="Invoice Recipient Name *" error={errors.invoiceRecipientName?.message} {...register('invoiceRecipientName')} />
-          <Input label="Invoice Email *" type="email" placeholder="Optional" error={errors.invoiceEmail?.message} {...register('invoiceEmail')} />
+          <Input label="Invoice Email" type="email" placeholder="Optional" error={errors.invoiceEmail?.message} {...register('invoiceEmail')} />
         </div>
       </div>
 
