@@ -169,20 +169,20 @@ export default function LoginPage() {
               <p className="font-medium text-gray-900">{ROLE_LABEL[role]}</p>
             </button>
           ))}
-          {/* Not a real Role — there is no shipping account/permission set
-              yet (Shipping is a module today, reachable by admin/sales/
-              accounting/operations, not its own login role). Shown disabled
-              so the team can see it's planned without it being clickable or
-              needing a fake account to back it. Wire this up as a normal
-              LOGIN_ROLES entry once a real shipping role/roster exists. */}
-          <div
-            className="flex items-center gap-3 p-4 text-left border border-gray-200 rounded-lg bg-gray-50 opacity-60 cursor-not-allowed"
-            title="Shipping accounts aren't set up yet"
-          >
-            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-gray-400 text-white shrink-0"><Truck size={20} /></div>
+          {/* Shipping is NOT a separate login role — the Production team also
+              operates Shipping (Production/Shipping accounts reach it via the
+              operations role + SHIPPING_EMAIL_ALLOWLIST, not a shipping role of
+              their own). So this is an info note, not a role button: it points
+              Shipping users at the Production login instead of pretending the
+              module is unavailable. Keep it in sync with that access rule; do
+              NOT turn it into a LOGIN_ROLES entry (there is no shipping role). */}
+          <div className="sm:col-span-2 flex items-start gap-3 p-4 border border-blue-200 rounded-lg bg-blue-50">
+            <div className="flex items-center justify-center w-9 h-9 rounded-md bg-blue-600 text-white shrink-0"><Truck size={18} /></div>
             <div>
-              <p className="font-medium text-gray-500">Shipping</p>
-              <p className="text-xs text-gray-400">Coming soon</p>
+              <p className="font-medium text-gray-900">Shipping is handled by the Production team</p>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Please log in as <span className="font-medium">Production</span> to access the Shipping module — Production team accounts are used for Shipping too.
+              </p>
             </div>
           </div>
         </div>
