@@ -1,5 +1,5 @@
 import type { SessionUser } from './auth'
-import { NOTE_TYPE_ACCESS, SHIPPING_RELEVANT_STATUSES, type Role, type NoteType, type OrderStatus } from './constants'
+import { NOTE_TYPE_ACCESS, SHIPPING_RELEVANT_STATUSES, isShippingAllowedEmail, type Role, type NoteType, type OrderStatus } from './constants'
 
 const FINANCE_FIELDS = ['totalAmount', 'advancePaid', 'balanceDue', 'paymentStatus', 'invoice'] as const
 
@@ -16,6 +16,19 @@ const SHIPPING_FIELDS = [
 ] as const
 
 export const CAN_VIEW_SHIPPING: Role[] = ['admin', 'sales', 'accounting', 'operations']
+
+/**
+ * Single source of truth for "may this session operate the Shipping module?" —
+ * true if the role is shipping-capable OR the email is on the Shipping
+ * allowlist (SHIPPING_EMAIL_ALLOWLIST — the Production/Shipping team accounts).
+ * Shared by the route guard (shipping/layout.tsx), the sidebar, the shipping
+ * pages' canEditShipping, and the courier/status write guards so every Shipping
+ * gate agrees. The role set intentionally reuses CAN_VIEW_SHIPPING — a role
+ * that can operate Shipping is exactly one that may see shipping fields.
+ */
+export function canAccessShipping(session: { role: Role; email?: string | null }): boolean {
+  return CAN_VIEW_SHIPPING.includes(session.role) || isShippingAllowedEmail(session.email)
+}
 
 // Mongoose populate() projection for the order's embedded client — used by
 // every order-detail route (GET/PUT /api/orders/[id], mark-delivered,
@@ -141,6 +154,12 @@ export function canViewOrderDetail(
   order: { assignedTeam?: { creativeExecutive?: unknown; productionManager?: unknown } | null; status?: OrderStatus },
   session: SessionUser
 ): boolean {
+  // Shipping-allowlisted email may open any shipping-relevant order regardless
+  // of its primary role — checked first so it also covers an allowlisted email
+  // whose role would otherwise be restricted (e.g. creative) below.
+  if (isShippingAllowedEmail(session.email) && order.status && SHIPPING_RELEVANT_STATUSES.includes(order.status)) {
+    return true
+  }
   if (session.role === 'creative') {
     const id = assigneeIdString(order.assignedTeam?.creativeExecutive)
     return id === undefined || id === session.id
@@ -183,10 +202,13 @@ const SHIPPING_ACTIVITY_TYPES = new Set(['order_dispatched'])
  * type (status changes, assignment, production progress, notes/assets added)
  * are unaffected; they don't embed protected figures.
  */
-export function filterActivityLogsForRole<T extends { type: string }>(logs: T[], role: Role): T[] {
+export function filterActivityLogsForRole<T extends { type: string }>(logs: T[], role: Role, email?: string | null): T[] {
+  // A Shipping-allowlisted email sees shipping activity (e.g. dispatch) the
+  // same as a shipping-capable role would — finance stays role-gated.
+  const canViewShipping = CAN_VIEW_SHIPPING.includes(role) || isShippingAllowedEmail(email)
   return logs.filter((log) => {
     if (FINANCE_ACTIVITY_TYPES.has(log.type) && !CAN_VIEW_FINANCE.includes(role)) return false
-    if (SHIPPING_ACTIVITY_TYPES.has(log.type) && !CAN_VIEW_SHIPPING.includes(role)) return false
+    if (SHIPPING_ACTIVITY_TYPES.has(log.type) && !canViewShipping) return false
     return true
   })
 }
@@ -201,17 +223,24 @@ export function filterActivityLogsForRole<T extends { type: string }>(logs: T[],
  * stripFinanceFields — every call site now gets shipping-field and
  * note-domain protection for free.
  */
-export function stripSensitiveOrderFields<T extends Record<string, unknown>>(order: T, role: Role): T {
+export function stripSensitiveOrderFields<T extends Record<string, unknown>>(order: T, role: Role, email?: string | null): T {
+  // A Shipping-allowlisted email keeps shipping/courier + client-address fields
+  // (it operates the Shipping module) but NOT finance — shipping capability
+  // never implies finance visibility. For roles that already cover these, the
+  // email check is a harmless no-op.
+  const shippingAllowed = isShippingAllowedEmail(email)
+  const canViewShipping = CAN_VIEW_SHIPPING.includes(role) || shippingAllowed
+  const canViewClientDetails = CAN_VIEW_CLIENT_DETAILS.includes(role) || shippingAllowed
   let clone = order
   if (!CAN_VIEW_FINANCE.includes(role)) {
     clone = { ...clone }
     for (const field of FINANCE_FIELDS) delete clone[field]
   }
-  if (!CAN_VIEW_SHIPPING.includes(role)) {
+  if (!canViewShipping) {
     clone = { ...clone }
     for (const field of SHIPPING_FIELDS) delete clone[field]
   }
-  if (!CAN_VIEW_CLIENT_DETAILS.includes(role) && clone.client && typeof clone.client === 'object') {
+  if (!canViewClientDetails && clone.client && typeof clone.client === 'object') {
     const clientClone = { ...(clone.client as Record<string, unknown>) }
     for (const field of CLIENT_DETAIL_FIELDS) delete clientClone[field]
     clone = { ...clone, client: clientClone }

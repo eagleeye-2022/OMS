@@ -27,7 +27,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .populate('createdBy', 'name')
       .lean()
 
-    return NextResponse.json({ success: true, data: stripSensitiveOrderFields(updated, session.role) })
+    return NextResponse.json({ success: true, data: stripSensitiveOrderFields(updated, session.role, session.email) })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })

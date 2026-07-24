@@ -6,6 +6,7 @@ import { ShippingSummaryCards } from '@/components/shipping/ShippingSummaryCards
 import { ShippingQueueTable } from '@/components/shipping/ShippingQueueTable'
 import { ShippingDetailDrawer } from '@/components/shipping/ShippingDetailDrawer'
 import { useAuth } from '@/hooks/useAuth'
+import { isShippingAllowedEmail } from '@/lib/constants'
 import type { IActivityLog, IOrder } from '@/types'
 
 export default function ShippingPage() {
@@ -30,7 +31,7 @@ export default function ShippingPage() {
   // by `isAdmin` in ShippingStatusActionsCard, not by canEditShipping) — an
   // unrelated, harder business rule that predates this change and applies
   // equally to sales/accounting today.
-  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounting' || user?.role === 'operations'
+  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounting' || user?.role === 'operations' || isShippingAllowedEmail(user?.email)
 
   // Tracks the most recently *requested* list query / order id so an
   // out-of-order network response can be detected and discarded instead of

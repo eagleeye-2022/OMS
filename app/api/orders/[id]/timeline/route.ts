@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const logs = await ActivityLog.find({ order: id }).sort({ createdAt: -1 }).limit(limit).lean()
 
-    return NextResponse.json({ success: true, data: filterActivityLogsForRole(logs, session.role) })
+    return NextResponse.json({ success: true, data: filterActivityLogsForRole(logs, session.role, session.email) })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })

@@ -14,7 +14,7 @@ import {
 } from '@/validations/order.schema'
 import { applyDirectStatusUpdate, getDispatchBlockReason } from '@/lib/order-status'
 import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES, isCreativeStatusLocked } from '@/lib/constants'
-import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS, canViewOrderDetail, isOrderAssignedToSelf, filterActivityLogsForRole } from '@/lib/order-visibility'
+import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS, canViewOrderDetail, isOrderAssignedToSelf, filterActivityLogsForRole, canAccessShipping } from '@/lib/order-visibility'
 import { PRODUCTION_STAGE_KEY_LABEL, type ProductionStage } from '@/lib/constants'
 
 function mongoError(err: unknown): NextResponse | null {
@@ -55,8 +55,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // Computed from the raw (pre-strip) doc — see getDispatchBlockReason's
     // doc comment on why this must survive stripSensitiveOrderFields.
-    const shapedOrder = { ...stripSensitiveOrderFields(order, session.role), dispatchBlockedReason: getDispatchBlockReason(order) }
-    return NextResponse.json({ success: true, data: { order: shapedOrder, logs: filterActivityLogsForRole(logs, session.role) } })
+    const shapedOrder = { ...stripSensitiveOrderFields(order, session.role, session.email), dispatchBlockedReason: getDispatchBlockReason(order) }
+    return NextResponse.json({ success: true, data: { order: shapedOrder, logs: filterActivityLogsForRole(logs, session.role, session.email) } })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
@@ -82,7 +82,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         .populate('client', ORDER_CLIENT_DETAIL_FIELDS)
         .populate('createdBy', 'name')
         .lean()
-      const shaped = { ...stripSensitiveOrderFields(updated, role), dispatchBlockedReason: getDispatchBlockReason(updated) }
+      const shaped = { ...stripSensitiveOrderFields(updated, role, session.email), dispatchBlockedReason: getDispatchBlockReason(updated) }
       return NextResponse.json({ success: true, data: shaped })
     }
 
@@ -300,7 +300,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // first time courier info is saved; later calls just edit the details in
     // place.
     if ('courierPartner' in body) {
-      if (!['admin', 'sales', 'accounting', 'operations'].includes(role)) {
+      if (!canAccessShipping(session)) {
         return NextResponse.json(
           { success: false, error: 'Only admin, sales, accounting, or operations can assign shipping/courier details' },
           { status: 403 }

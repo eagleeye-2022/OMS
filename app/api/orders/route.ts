@@ -148,7 +148,7 @@ export async function GET(req: NextRequest) {
     // paymentStatus even for roles (e.g. 'shipping') that never receive that
     // field themselves — see getDispatchBlockReason's doc comment.
     const data = orders.map((o) => ({
-      ...stripSensitiveOrderFields(o, session.role),
+      ...stripSensitiveOrderFields(o, session.role, session.email),
       dispatchBlockedReason: getDispatchBlockReason(o),
     }))
 

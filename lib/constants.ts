@@ -245,6 +245,28 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   accounting: ['accounts', 'shipping', 'settings'],
 }
 
+// Email-level override for the Shipping module — "the Production team is also
+// the Shipping team." These accounts are recognized as Shipping-capable by
+// EMAIL, in addition to (not instead of) the role-based ACL above. Today they
+// are the Production/operations team accounts, which already reach Shipping via
+// their operations role — listing them here makes that mapping explicit AND
+// lets a Shipping user be granted access by email in future even if their
+// primary role isn't one of the shipping roles. Additive only: it never
+// removes access any role already has, and it grants Shipping capability only
+// (view + dispatch/status) — never finance visibility, which stays role-gated.
+// Matched case-insensitively; keep this in sync with the operations entries in
+// app/api/admin/bootstrap/route.ts's DEMO_USERS.
+export const SHIPPING_EMAIL_ALLOWLIST: string[] = [
+  'ordersbloopers@gmail.com',
+  'ishitavishwakarma220743@acropolis.in',
+]
+
+export function isShippingAllowedEmail(email?: string | null): boolean {
+  if (!email) return false
+  const normalized = email.toLowerCase()
+  return SHIPPING_EMAIL_ALLOWLIST.some((allowed) => allowed.toLowerCase() === normalized)
+}
+
 // 'operations' (the merged production+shipping role) defaults to the
 // Production floor queue — change to '/shipping' if the business wants
 // Operations logins to land on the dispatch queue instead. '/no-access'

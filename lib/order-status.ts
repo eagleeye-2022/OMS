@@ -2,7 +2,7 @@ import ActivityLog from '@/models/ActivityLog'
 import Notification from '@/models/Notification'
 import type { IOrderDocument } from '@/models/Order'
 import type { SessionUser } from './auth'
-import type { Role, OrderStatus, PaymentStatus } from './constants'
+import { isShippingAllowedEmail, type Role, type OrderStatus, type PaymentStatus } from './constants'
 import { updateOrderStatusSchema } from '@/validations/order.schema'
 
 /**
@@ -59,6 +59,29 @@ export const ROLE_ALLOWED_STATUSES: Record<Role, OrderStatus[]> = {
 
 export type StatusUpdateResult = { ok: true } | { ok: false; status: number; error: string }
 
+// Shipping-desk status transitions available to any shipping operator (mirrors
+// the set accounting/operations already carry in ROLE_ALLOWED_STATUSES).
+// 'delivered' is intentionally excluded — Mark as Delivered stays admin-only
+// via its dedicated route.
+const SHIPPING_EMAIL_STATUSES: OrderStatus[] = ['in_transit', 'delayed']
+
+/**
+ * The order statuses a session may set via the direct status-update path,
+ * combining its role's allowed set with the shipping-desk transitions granted
+ * to a Shipping-allowlisted email (so a Shipping team account can drive In
+ * Transit / Delayed even if its primary role grants no direct status changes).
+ * Pure/exported so it's unit-testable without a DB round-trip.
+ */
+export function getAllowedDirectStatuses(session: Pick<SessionUser, 'role' | 'email'>): OrderStatus[] {
+  const allowed = [...(ROLE_ALLOWED_STATUSES[session.role] ?? [])]
+  if (isShippingAllowedEmail(session.email)) {
+    for (const status of SHIPPING_EMAIL_STATUSES) {
+      if (!allowed.includes(status)) allowed.push(status)
+    }
+  }
+  return allowed
+}
+
 /**
  * Shared by PUT /api/orders/[id]'s `status` intent and the dedicated
  * PATCH /api/orders/[id]/status route, so the role-gated transition logic
@@ -69,7 +92,7 @@ export async function applyDirectStatusUpdate(
   session: SessionUser,
   body: unknown
 ): Promise<StatusUpdateResult> {
-  const allowedStatuses = ROLE_ALLOWED_STATUSES[session.role] ?? []
+  const allowedStatuses = getAllowedDirectStatuses(session)
   if (allowedStatuses.length === 0) {
     return { ok: false, status: 403, error: `Role '${session.role}' cannot update order status directly` }
   }

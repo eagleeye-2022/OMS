@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { ShippingDetailPage } from '@/components/shipping/ShippingDetailPage'
 import { useAuth } from '@/hooks/useAuth'
+import { isShippingAllowedEmail } from '@/lib/constants'
 import type { IActivityLog, IOrder } from '@/types'
 
 export default function ShippingDetailRoute({ params }: { params: Promise<{ id: string }> }) {
@@ -33,7 +34,7 @@ export default function ShippingDetailRoute({ params }: { params: Promise<{ id: 
   const isAdmin = user?.role === 'admin'
   // 'operations' now has full Shipping write access — see the matching
   // comment in app/(dashboard)/shipping/page.tsx for the full rationale.
-  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounting' || user?.role === 'operations'
+  const canEditShipping = user?.role === 'admin' || user?.role === 'sales' || user?.role === 'accounting' || user?.role === 'operations' || isShippingAllowedEmail(user?.email)
 
   return (
     <div className="p-6 space-y-5 max-w-2xl">
