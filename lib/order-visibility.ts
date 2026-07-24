@@ -1,5 +1,5 @@
 import type { SessionUser } from './auth'
-import { NOTE_TYPE_ACCESS, type Role, type NoteType } from './constants'
+import { NOTE_TYPE_ACCESS, SHIPPING_RELEVANT_STATUSES, type Role, type NoteType, type OrderStatus } from './constants'
 
 const FINANCE_FIELDS = ['totalAmount', 'advancePaid', 'balanceDue', 'paymentStatus', 'invoice'] as const
 
@@ -125,9 +125,20 @@ export function isOrderAssignedToSelf(
  * existed. Closes the gap where applyOwnQueueVisibility only filtered the
  * list query, never the item-level GET, so a restricted-role user could
  * bypass "my queue only" simply by opening an order's detail URL directly.
+ *
+ * 'operations' is also the Shipping team ("Production team is also Shipping
+ * team"): the Shipping queue lists every shipping-relevant order to all
+ * shipping roles with no per-assignee restriction (see relevantTo=shipping in
+ * app/api/orders/route.ts), so an operations user must be able to OPEN any of
+ * those too — even one that reached shipping without a production manager ever
+ * being assigned (e.g. admin drove it to shipping_ready directly). Without
+ * this clause such an order shows in their Shipping list but 403s on open.
+ * Additive and role-scoped: it only widens 'operations', exposes nothing the
+ * Shipping list didn't already show them, and callers that don't select
+ * `status` (unaffected routes) simply fall through to the assignment check.
  */
 export function canViewOrderDetail(
-  order: { assignedTeam?: { creativeExecutive?: unknown; productionManager?: unknown } | null },
+  order: { assignedTeam?: { creativeExecutive?: unknown; productionManager?: unknown } | null; status?: OrderStatus },
   session: SessionUser
 ): boolean {
   if (session.role === 'creative') {
@@ -135,6 +146,7 @@ export function canViewOrderDetail(
     return id === undefined || id === session.id
   }
   if (session.role === 'operations') {
+    if (order.status && SHIPPING_RELEVANT_STATUSES.includes(order.status)) return true
     return assigneeIdString(order.assignedTeam?.productionManager) !== undefined
   }
   return true
