@@ -5,6 +5,27 @@ const FINANCE_FIELDS = ['totalAmount', 'advancePaid', 'balanceDue', 'paymentStat
 
 export const CAN_VIEW_FINANCE: Role[] = ['admin', 'sales', 'accounting']
 
+/**
+ * Whether this role may see financial details (order/payment amounts, GST,
+ * invoices) anywhere in the app — true for admin/sales/accounting, false for
+ * creative/operations. Every other finance-visibility check in this file
+ * (stripSensitiveOrderFields, filterActivityLogsForRole, filterNotificationsForRole)
+ * is written against this function, so it's the single place that defines
+ * the policy; CAN_VIEW_FINANCE above is its implementation detail.
+ *
+ * Most order-detail UI components don't call this directly — they check
+ * whether the server already stripped a finance field instead (e.g.
+ * `order.totalAmount != null`), which is the more robust pattern for
+ * rendering: a component that forgets that check fails safe (the field
+ * simply isn't there to read), whereas a component that forgets a role
+ * check does not. Call this directly only where there's no order/field to
+ * check presence against — e.g. the notifications route below, which is
+ * filtering by session role before any single order is in scope.
+ */
+export function canViewFinanceDetails(role: Role): boolean {
+  return CAN_VIEW_FINANCE.includes(role)
+}
+
 // Shipping/courier/delivery fields — operationally sensitive in the same way
 // finance fields are, but distinct from them (a role can legitimately see
 // one without the other). Kept as its own list even though it currently
@@ -195,6 +216,15 @@ export function canWriteNoteType(role: Role, noteType: NoteType): boolean {
 const FINANCE_ACTIVITY_TYPES = new Set(['payment_recorded', 'invoice_uploaded', 'payment_reminder_sent'])
 const SHIPPING_ACTIVITY_TYPES = new Set(['order_dispatched'])
 
+// GET /api/notifications has no per-role query filter at all today — every
+// notification (including 'payment_pending', whose title/message embed a
+// rupee amount, e.g. "₹46,000 payment pending") is sent to every
+// authenticated session regardless of role. Same side-channel as
+// FINANCE_ACTIVITY_TYPES above, just on a different collection. Exported (unlike
+// FINANCE_ACTIVITY_TYPES) because the notifications route also needs it at the
+// query level, for the unread-count query — not just for post-fetch filtering.
+export const FINANCE_NOTIFICATION_TYPES = new Set(['payment_pending'])
+
 /**
  * Filters an order's activity-log entries down to ones whose description
  * can't reveal finance/shipping data the viewing role isn't allowed to see —
@@ -207,10 +237,15 @@ export function filterActivityLogsForRole<T extends { type: string }>(logs: T[],
   // same as a shipping-capable role would — finance stays role-gated.
   const canViewShipping = CAN_VIEW_SHIPPING.includes(role) || isShippingAllowedEmail(email)
   return logs.filter((log) => {
-    if (FINANCE_ACTIVITY_TYPES.has(log.type) && !CAN_VIEW_FINANCE.includes(role)) return false
+    if (FINANCE_ACTIVITY_TYPES.has(log.type) && !canViewFinanceDetails(role)) return false
     if (SHIPPING_ACTIVITY_TYPES.has(log.type) && !canViewShipping) return false
     return true
   })
+}
+
+/** The notification-collection equivalent of filterActivityLogsForRole — same reasoning, different collection. */
+export function filterNotificationsForRole<T extends { type: string }>(notifications: T[], role: Role): T[] {
+  return notifications.filter((n) => !FINANCE_NOTIFICATION_TYPES.has(n.type) || canViewFinanceDetails(role))
 }
 
 /**
@@ -232,7 +267,7 @@ export function stripSensitiveOrderFields<T extends Record<string, unknown>>(ord
   const canViewShipping = CAN_VIEW_SHIPPING.includes(role) || shippingAllowed
   const canViewClientDetails = CAN_VIEW_CLIENT_DETAILS.includes(role) || shippingAllowed
   let clone = order
-  if (!CAN_VIEW_FINANCE.includes(role)) {
+  if (!canViewFinanceDetails(role)) {
     clone = { ...clone }
     for (const field of FINANCE_FIELDS) delete clone[field]
   }

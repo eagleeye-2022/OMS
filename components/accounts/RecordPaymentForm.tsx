@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { blurNumberInputOnWheel } from '@/lib/numberInput'
 import type { IClient, IOrder, IPayment } from '@/types'
 
 const QUICK_METHODS = ['Bank Transfer', 'UPI', 'Cash', 'Cheque']
@@ -70,6 +71,7 @@ export function RecordPaymentForm({ order, onRecorded }: RecordPaymentFormProps)
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
             <input
               type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)}
+              onWheel={blurNumberInputOnWheel}
               className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="0.00"
             />

@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { cn, formatCurrency, formatFileSize } from '@/lib/utils'
-import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile } from '@/lib/upload'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'
 import { totalGst } from './types'
 import type { IClient, IOrder } from '@/types'
 
@@ -129,10 +129,7 @@ export function InvoiceUploadModal({ order, onClose, onSaved }: InvoiceUploadMod
         formData.append('file', file)
         formData.append('orderId', order._id)
         formData.append('field', 'invoice')
-        const upRes = await fetch('/api/upload', { method: 'POST', body: formData })
-        const upData = await upRes.json()
-        if (!upData.success) { setError(upData.error || 'File upload failed'); setSaving(false); return }
-        fileMeta = upData.data
+        fileMeta = await performUpload(formData)
       }
 
       const res = await fetch(`/api/orders/${order._id}/invoice`, {
@@ -158,8 +155,8 @@ export function InvoiceUploadModal({ order, onClose, onSaved }: InvoiceUploadMod
       } else {
         setError(data.error || 'Failed to save invoice')
       }
-    } catch {
-      setError('Network error')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Network error')
     } finally {
       setSaving(false)
     }

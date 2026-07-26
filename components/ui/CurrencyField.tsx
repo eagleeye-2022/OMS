@@ -1,4 +1,5 @@
 import type { UseFormRegisterReturn } from 'react-hook-form'
+import { blurNumberInputOnWheel } from '@/lib/numberInput'
 
 /** ₹-prefixed number input — shared by CreateOrderModal and the client wizard's Order Preferences step (both create real Order money fields). */
 export function CurrencyField({ label, required, error, registration }: { label: string; required?: boolean; error?: string; registration: UseFormRegisterReturn }) {
@@ -9,6 +10,7 @@ export function CurrencyField({ label, required, error, registration }: { label:
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₹</span>
         <input
           type="number" min={0} step="0.01"
+          onWheel={blurNumberInputOnWheel}
           className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           {...registration}
         />

@@ -7,7 +7,7 @@ import { generateOtp, hashOtp } from '@/lib/otp'
 import { sendMail } from '@/lib/mailer'
 import { getMailConfig } from '@/lib/mail-config'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { getTesterAllowedRoles } from '@/lib/testers'
+import { getTesterAllowedRoles, isTesterEmail } from '@/lib/testers'
 
 const OTP_TTL_MS = 10 * 60 * 1000
 
@@ -83,8 +83,18 @@ export async function POST(req: NextRequest) {
     // silently fall back to for a real business account.
     if (selectedRole && selectedRole !== user.role) {
       console.warn(JSON.stringify({ event: 'role_mismatch_denied', stage: 'request_otp', selectedRole, actualRole: user.role, ...logBase }))
+      // Approved testers (lib/testers.ts) hit this exact rejection often —
+      // their production account has one real role, but they legitimately
+      // need to exercise several modules, which /login's picker deliberately
+      // never allows (see the block comment above). Point them at the page
+      // that's actually built for that instead of leaving them to guess or
+      // re-litigate this as a bug — without revealing the account's real
+      // role to an unverified request (no OTP has been proven yet).
+      const testerHint = isTesterEmail(email)
+        ? ' If you need to test a different module, use the Tester Login page (/tester-login) instead — it lets an approved tester account log in under any role it has testing access to.'
+        : ''
       return NextResponse.json(
-        { success: false, error: `This account is not registered for the "${selectedRole}" role. Please select the correct role.` },
+        { success: false, error: `This account is not registered for the "${selectedRole}" role. Please select the correct role.${testerHint}` },
         { status: 403 }
       )
     }

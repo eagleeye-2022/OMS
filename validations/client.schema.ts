@@ -55,6 +55,11 @@ const productPreferenceSchema = z.object({
   orderNote: z.string().min(1, 'Order note is required'),
   totalAmount: z.coerce.number().positive('Total order value is required and must be greater than 0'),
   advancePaid: z.coerce.number().min(0).optional(),
+  // Round-trips the link to the real Order this row already produced (see
+  // models/Client.ts) so a later edit doesn't create a duplicate for it —
+  // must survive every save, not just be accepted, or the linkage is lost
+  // the moment a client is edited again.
+  orderId: z.string().optional(),
 })
 
 /**
@@ -135,6 +140,7 @@ export const clientDraftSchema = z.object({
     orderNote: z.string().optional().or(z.literal('')),
     totalAmount: z.coerce.number().min(0).optional(),
     advancePaid: z.coerce.number().min(0).optional(),
+    orderId: z.string().optional(),
   })).optional(),
   notes: z.string().optional().or(z.literal('')),
 })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put, BlobError } from '@vercel/blob'
 import { getSession } from '@/lib/auth'
-import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_FILE_SIZE } from '@/lib/upload'
+import { ALLOWED_UPLOAD_MIME_TYPES, MAX_UPLOAD_FILE_SIZE, MAX_UPLOAD_FILE_SIZE_LABEL } from '@/lib/upload'
 
 const ALLOWED_MIME_TYPES = new Set<string>(ALLOWED_UPLOAD_MIME_TYPES)
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Unsupported file type. Allowed: PNG, JPG, WEBP, SVG, PDF' }, { status: 400 })
     }
     if (file.size > MAX_UPLOAD_FILE_SIZE) {
-      return NextResponse.json({ success: false, error: 'File exceeds the 10MB size limit' }, { status: 400 })
+      return NextResponse.json({ success: false, error: `File exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} size limit` }, { status: 400 })
     }
 
     const safeEntityId = entityId.replace(/[^a-zA-Z0-9]/g, '')

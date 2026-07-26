@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Notification from '@/models/Notification'
+import { FINANCE_NOTIFICATION_TYPES, canViewFinanceDetails, filterNotificationsForRole } from '@/lib/order-visibility'
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,14 +14,21 @@ export async function GET(req: NextRequest) {
     const unreadOnly = searchParams.get('unread') === 'true'
 
     const query = unreadOnly ? { isRead: false } : {}
-    const notifications = await Notification.find(query)
+    const rawNotifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .limit(50)
       .populate('order', 'orderNumber')
       .populate('client', 'companyName')
       .lean()
+    const notifications = filterNotificationsForRole(rawNotifications, session.role)
 
-    const unreadCount = await Notification.countDocuments({ isRead: false })
+    // Counted separately (not derived from the capped 50-item list above) so
+    // it stays accurate once there are more than 50 notifications — but must
+    // apply the same role filter at the query level, or a restricted role's
+    // badge count would include finance notifications it never actually sees.
+    const unreadCount = await Notification.countDocuments(
+      canViewFinanceDetails(session.role) ? { isRead: false } : { isRead: false, type: { $nin: Array.from(FINANCE_NOTIFICATION_TYPES) } }
+    )
     return NextResponse.json({ success: true, data: notifications, unreadCount })
   } catch (err) {
     console.error(err)

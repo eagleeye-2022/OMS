@@ -120,8 +120,8 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+    <div className="flex flex-col gap-5 p-6 lg:h-full lg:overflow-hidden">
+      <div className="flex items-center justify-between gap-4 flex-wrap shrink-0">
         <h1 className="text-xl font-bold text-gray-900">Order Management</h1>
         <SearchBar
           className="flex-1 max-w-md"
@@ -134,7 +134,7 @@ export default function OrdersPage() {
         )}
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-5 items-start">
+      <div className="flex flex-col lg:flex-row gap-5 lg:flex-1 lg:min-h-0">
         <OrderListPanel
           orders={orders}
           total={total}

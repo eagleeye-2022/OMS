@@ -3,6 +3,7 @@
 import { useFormContext } from 'react-hook-form'
 import { Input, Select, Textarea } from '@/components/ui/Input'
 import { PAYMENT_TERMS_LABEL, PREFERRED_PAYMENT_MODE_LABEL } from '@/lib/constants'
+import { blurNumberInputOnWheel } from '@/lib/numberInput'
 import type { ClientFormValues } from './types'
 
 const CLIENT_TYPE_OPTIONS = [
@@ -73,6 +74,7 @@ export function StepBillingDetails() {
             min={0}
             step="0.01"
             placeholder="e.g. 25000"
+            onWheel={blurNumberInputOnWheel}
             className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             {...register('typicalOrderValue')}
           />

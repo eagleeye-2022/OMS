@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Types } from 'mongoose'
 import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Client from '@/models/Client'
-import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
 import { clientSchema, clientDraftSchema } from '@/validations/client.schema'
 import { CLOSED_ORDER_STATUSES } from '@/lib/constants'
-import { getNextOrderNumber, computeOrderMoney } from '@/lib/order-creation'
-import type { SessionUser } from '@/lib/auth'
-import type { IProductPreference } from '@/models/Client'
+import { materializeOrderPreferences } from '@/lib/order-creation'
 
 function mongoError(err: unknown): NextResponse | null {
   const e = err as { code?: number; name?: string; message?: string }
@@ -91,65 +89,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-/**
- * Creates a real Order for every product-preference row that carries
- * pricing — this is what makes the client wizard's "Order Preferences" step
- * (StepAssetsOrder.tsx) actually place orders instead of only saving
- * reference data on the Client doc (the 2026-07-22 fix for "first order
- * created with a new client is not visible"). Mirrors POST /api/orders'
- * field mapping exactly (productType <- the free-text note, category <- the
- * dropdown) so an order created this way is indistinguishable from one made
- * from the Orders tab. Only called for a client's initial creation with
- * status=active — editing an existing client's preferences later (PUT) does
- * not create orders, matching the reported bug's exact scope.
- */
-async function createFirstOrdersForClient(
-  clientId: string,
-  deliveryDate: string | undefined,
-  productPreferences: Array<Partial<IProductPreference>>,
-  session: SessionUser
-) {
-  if (!deliveryDate) return []
-  const createdOrders = []
-
-  for (const pref of productPreferences) {
-    if (!pref.totalAmount || pref.totalAmount <= 0) continue
-
-    const orderNumber = await getNextOrderNumber()
-    const advancePaid = pref.advancePaid || 0
-    const { balanceDue, paymentStatus } = computeOrderMoney(pref.totalAmount, advancePaid)
-
-    const order = await Order.create({
-      orderNumber,
-      client: clientId,
-      category: pref.preferredProductCategory,
-      productType: pref.orderNote,
-      quantity: pref.orderQuantity,
-      deliveryDate,
-      totalAmount: pref.totalAmount,
-      advancePaid,
-      balanceDue,
-      paymentStatus,
-      status: 'pending',
-      designStatus: 'pending',
-      createdBy: session.id,
-    })
-
-    await ActivityLog.create({
-      type: 'order_created',
-      description: `Order ${orderNumber} created`,
-      order: order._id,
-      client: clientId,
-      user: session.id,
-      userName: session.name,
-    })
-
-    createdOrders.push(order)
-  }
-
-  return createdOrders
-}
-
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
@@ -166,8 +105,19 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB()
+
+    // Pre-allocated so materializeOrderPreferences can link each Order's
+    // `client` field before the Client document itself exists yet — that
+    // way the stamped `orderId`s land in the very first Client.create()
+    // write instead of needing a second write-back afterward.
+    const clientId = new Types.ObjectId()
+    const orders = isFinal
+      ? await materializeOrderPreferences(clientId.toString(), parsed.data.deliveryDate, parsed.data.productPreferences ?? [], { id: session.id, name: session.name })
+      : []
+
     const client = await Client.create({
       ...parsed.data,
+      _id: clientId,
       status: isFinal ? 'active' : 'draft',
       createdBy: session.id,
     })
@@ -179,10 +129,6 @@ export async function POST(req: NextRequest) {
       user: session.id,
       userName: session.name,
     })
-
-    const orders = isFinal
-      ? await createFirstOrdersForClient(client._id.toString(), parsed.data.deliveryDate, parsed.data.productPreferences ?? [], session)
-      : []
 
     return NextResponse.json({ success: true, data: client, orders }, { status: 201 })
   } catch (err) {

@@ -29,6 +29,8 @@ export interface ClientProductPreferenceFormValues {
   orderNote: string
   totalAmount: string
   advancePaid: string
+  /** Carried forward from the server once this row has produced a real Order — see models/Client.ts. Undefined means "not yet materialized". */
+  orderId?: string
 }
 
 export interface ClientFormValues {
@@ -171,6 +173,7 @@ export function mapClientToFormValues(client: IClient): ClientFormValues {
           orderNote: p.orderNote || '',
           totalAmount: p.totalAmount != null ? String(p.totalAmount) : '',
           advancePaid: p.advancePaid != null ? String(p.advancePaid) : '',
+          orderId: p.orderId || undefined,
         }))
       : [{ preferredProductCategory: '', orderQuantity: '', orderNote: '', totalAmount: '', advancePaid: '' }],
     notes: client.notes || '',
@@ -187,6 +190,7 @@ export function buildClientPayload(values: ClientFormValues, status: 'draft' | '
       orderNote: p.orderNote,
       totalAmount: p.totalAmount ? Number(p.totalAmount) : undefined,
       advancePaid: p.advancePaid ? Number(p.advancePaid) : undefined,
+      orderId: p.orderId || undefined,
     }))
 
   return {

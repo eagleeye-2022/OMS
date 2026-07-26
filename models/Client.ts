@@ -29,16 +29,23 @@ export interface IProductPreference {
   orderQuantity: number
   orderNote: string
   /**
-   * Present only when this preference row was saved as a real first order
-   * (see app/api/clients/route.ts POST — creates one Order per row that has
-   * totalAmount set). Kept on the Client doc too, alongside the Order it
-   * produced, purely so this section can keep rendering from the client
-   * record without a join; the Order document (findable via
-   * order.client === this client's _id) is the actual source of truth for
-   * tracking/status/payments from here on.
+   * Present only when this preference row was saved as a real order (see
+   * lib/order-creation.ts:materializeOrderPreferences, called from both
+   * POST /api/clients and PUT /api/clients/[id]). Kept on the Client doc too,
+   * alongside the Order it produced, purely so this section can keep
+   * rendering from the client record without a join; the Order document
+   * (findable via order.client === this client's _id) is the actual source
+   * of truth for tracking/status/payments from here on.
    */
   totalAmount?: number
   advancePaid?: number
+  /**
+   * Links this row to the real Order it produced once materialized. Its
+   * presence is the signal that stops a later client edit from creating a
+   * duplicate Order for a row that already has one — only rows without this
+   * set are ever converted (see materializeOrderPreferences).
+   */
+  orderId?: Types.ObjectId
 }
 
 export interface IClientDocument extends Document {
@@ -127,6 +134,7 @@ const ProductPreferenceSchema = new Schema<IProductPreference>(
     orderNote: { type: String, required: true },
     totalAmount: { type: Number, min: 0 },
     advancePaid: { type: Number, min: 0 },
+    orderId: { type: Schema.Types.ObjectId, ref: 'Order' },
   },
   { _id: false }
 )

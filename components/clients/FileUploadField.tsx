@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import Image from 'next/image'
 import { Upload, FileText, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile } from '@/lib/upload'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'
 import type { ClientAssetFormValue } from './types'
 
 interface FileUploadFieldProps {
@@ -40,15 +40,10 @@ export function FileUploadField({ label, clientId, field, value, onChange }: Fil
       formData.append('file', file)
       formData.append('clientId', clientId)
       formData.append('field', field)
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.success) {
-        onChange(data.data)
-      } else {
-        setError(data.error || 'Upload failed')
-      }
-    } catch {
-      setError('Network error during upload')
+      const result = await performUpload(formData)
+      onChange(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setUploading(false)
       if (inputRef.current) inputRef.current.value = ''

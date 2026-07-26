@@ -70,6 +70,8 @@ export interface IProductPreference {
   orderNote: string
   totalAmount?: number
   advancePaid?: number
+  /** Set once this row has produced a real Order — see models/Client.ts. */
+  orderId?: string
 }
 
 export interface IClient {

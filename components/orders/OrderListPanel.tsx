@@ -46,7 +46,7 @@ interface OrderListPanelProps {
 
 export function OrderListPanel({ orders, total, loading, search, stage, onStageChange, selectedId, canViewFinance, onSelect }: OrderListPanelProps) {
   return (
-    <div className="w-full lg:w-96 lg:shrink-0 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
+    <div className="w-full lg:w-96 lg:h-full lg:shrink-0 bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-900">Active Orders</h3>
         <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{total}</span>

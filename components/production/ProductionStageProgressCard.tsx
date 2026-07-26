@@ -11,6 +11,7 @@ import {
   PRODUCTION_STAGE_STATUS_LABEL, PRODUCTION_STAGE_STATUS_COLOR,
   type ProductionStageKey,
 } from '@/lib/constants'
+import { isStageDone } from '@/lib/production-stage'
 import type { IOrder } from '@/types'
 
 const STATUS_OPTIONS = [
@@ -80,6 +81,11 @@ export function ProductionStageProgressCard({ order, canEdit, onUpdated }: Produ
           const total = stage.totalUnits || order.quantity
           const progress = total > 0 ? Math.min(100, Math.round((stage.unitsCompleted / total) * 100)) : 0
           const isEditing = editingStage === key
+          const formUnitsCompleted = Number(form.unitsCompleted) || 0
+          const formTotalUnits = Number(form.totalUnits) || order.quantity
+          const unitsMismatch =
+            form.status === 'completed' &&
+            !isStageDone({ status: form.status, unitsCompleted: formUnitsCompleted, totalUnits: formTotalUnits }, order.quantity)
 
           return (
             <div key={key} className="p-3 rounded-lg border border-gray-100 bg-gray-50">
@@ -115,11 +121,16 @@ export function ProductionStageProgressCard({ order, canEdit, onUpdated }: Produ
                     <Input type="number" min="0" placeholder="Total units" value={form.totalUnits} onChange={(e) => setForm((f) => ({ ...f, totalUnits: e.target.value }))} />
                   </div>
                   <Textarea placeholder="Note (optional)" rows={2} value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
+                  {unitsMismatch && (
+                    <p className="text-xs text-red-600">
+                      Units completed ({formUnitsCompleted}) must reach total units ({formTotalUnits}) before this stage can be marked Completed.
+                    </p>
+                  )}
                   <div className="flex justify-end gap-2">
                     <Button size="sm" variant="outline" type="button" onClick={() => setEditingStage(null)}>
                       <X size={13} />
                     </Button>
-                    <Button size="sm" type="button" loading={saving} onClick={save}>
+                    <Button size="sm" type="button" loading={saving} disabled={unitsMismatch} onClick={save}>
                       <Check size={13} className="mr-1" /> Save
                     </Button>
                   </div>

@@ -108,7 +108,7 @@ export function OrderDetailPanel({ order, logs, loading, role, hasAnyOrders = tr
   const canViewFinance = order.totalAmount != null
 
   return (
-    <div className="flex-1 w-full space-y-5 min-w-0">
+    <div className="flex-1 w-full space-y-5 min-w-0 lg:h-full lg:overflow-y-auto">
       <OrderHeaderCard order={order} canEdit={canEditCore} onEdit={onEdit} />
       <OrderSummarySentence order={order} />
       <OrderClientInfoCard order={order} />

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { FileText, ExternalLink, Plus, Upload, Loader2, Cloud } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile } from '@/lib/upload'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'
 import type { IOrder } from '@/types'
 
 interface AssetsDocumentsCardProps {
@@ -66,10 +66,8 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
       formData.append('file', file)
       formData.append('orderId', order._id)
       formData.append('field', 'asset')
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error || 'Upload failed')
-      await addAsset({ label: file.name, url: data.data.url, kind: 'file', mimeType: data.data.mimeType, size: data.data.size })
+      const result = await performUpload(formData)
+      await addAsset({ label: file.name, url: result.url, kind: 'file', mimeType: result.mimeType, size: result.size })
       onUpdated()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')

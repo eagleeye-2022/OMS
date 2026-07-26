@@ -6,6 +6,7 @@ import Client from '@/models/Client'
 import Order from '@/models/Order'
 import { clientSchema, clientDraftSchema } from '@/validations/client.schema'
 import { CLOSED_ORDER_STATUSES } from '@/lib/constants'
+import { materializeOrderPreferences } from '@/lib/order-creation'
 
 function mongoError(err: unknown): NextResponse | null {
   const e = err as { code?: number; name?: string; message?: string }
@@ -84,13 +85,27 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     await connectDB()
+
+    // Product-preference rows added while editing an already-active client
+    // (e.g. the wizard's "Add another order" checkbox on an existing client)
+    // previously only ever updated this Client doc's own productPreferences
+    // array — no Order was ever created for them, so they showed up in the
+    // client's "Order Preferences" summary but never in Order History or the
+    // Orders module. materializeOrderPreferences (shared with POST
+    // /api/clients) creates a real Order for any row that doesn't already
+    // have one, and stamps `orderId` onto rows that already do so they're
+    // never converted twice.
+    const orders = isFinal
+      ? await materializeOrderPreferences(id, parsed.data.deliveryDate, parsed.data.productPreferences ?? [], { id: session.id, name: session.name })
+      : []
+
     const client = await Client.findByIdAndUpdate(
       id,
       { ...parsed.data, status: isFinal ? 'active' : (parsed.data.status ?? 'draft'), updatedBy: session.id },
       { new: true, runValidators: true }
     )
     if (!client) return NextResponse.json({ success: false, error: 'Client not found' }, { status: 404 })
-    return NextResponse.json({ success: true, data: client })
+    return NextResponse.json({ success: true, data: client, orders })
   } catch (err) {
     const safe = mongoError(err)
     if (safe) return safe

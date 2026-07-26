@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PRODUCTION_STAGE_KEYS, PRODUCTION_STAGE_KEY_LABEL } from '@/lib/constants'
-import { isChecklistComplete } from './types'
+import { isChecklistComplete, isStageDone } from './types'
 import type { IOrder } from '@/types'
 
 const CHECKLIST_LABEL: Record<string, string> = {
@@ -47,7 +47,7 @@ export function ProductionChecklistCard({ order, canComplete, onCompleted }: Pro
       <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Completion Checklist</h3>
       <div className="space-y-2 mb-4">
         {PRODUCTION_STAGE_KEYS.map((key) => {
-          const checked = order.productionStages[key].status === 'completed'
+          const checked = isStageDone(order.productionStages[key], order.quantity)
           return (
             <label key={key} className="flex items-center gap-2 text-sm">
               <span className={cn('w-4 h-4 rounded flex items-center justify-center border', checked ? 'bg-gray-900 border-gray-900' : 'border-gray-300')}>
@@ -67,7 +67,7 @@ export function ProductionChecklistCard({ order, canComplete, onCompleted }: Pro
         <>
           {!ready && (
             <div className="px-3 py-2 bg-red-50 border border-red-100 rounded-lg text-xs text-red-600 mb-3">
-              Completion button unlocks when all checklist items are checked.
+              Completion button unlocks once every stage is marked Completed with its units fully accounted for.
             </div>
           )}
           <button

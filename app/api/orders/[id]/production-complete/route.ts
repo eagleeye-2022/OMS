@@ -6,6 +6,7 @@ import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
 import { PRODUCTION_STAGE_KEYS, getProductionBlockReason } from '@/lib/constants'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS, isOrderAssignedToSelf } from '@/lib/order-visibility'
+import { isStageDone } from '@/lib/production-stage'
 
 // Statuses production-complete may still fire from. Excludes 'pending' and
 // 'design_review' — production can't be "complete" on an order whose design
@@ -69,7 +70,7 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
       }
     }
 
-    const incompleteStage = PRODUCTION_STAGE_KEYS.find((key) => existing.productionStages[key].status !== 'completed')
+    const incompleteStage = PRODUCTION_STAGE_KEYS.find((key) => !isStageDone(existing.productionStages[key], existing.quantity))
     if (incompleteStage) {
       return NextResponse.json(
         { success: false, error: `All production stages must be completed first (${incompleteStage} is not done)` },

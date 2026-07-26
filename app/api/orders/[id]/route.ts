@@ -256,6 +256,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       const { stage, status, unitsCompleted, totalUnits, workerName, note } = parsed.data
       const current = existing.productionStages[stage]
+      const nextUnitsCompleted = unitsCompleted !== undefined ? unitsCompleted : current.unitsCompleted
+      const nextTotalUnits = totalUnits !== undefined ? totalUnits : current.totalUnits || existing.quantity
+      const nextStatus = status !== undefined ? status : current.status
+
+      // A stage can't be marked Completed unless its units actually reflect
+      // that — otherwise "Completed" is just a label picked from the dropdown
+      // with nothing behind it, which used to let "Mark Production Complete"
+      // fire on stages nobody actually finished.
+      if (nextStatus === 'completed' && nextUnitsCompleted < nextTotalUnits) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Cannot mark ${PRODUCTION_STAGE_KEY_LABEL[stage]} as Completed — units completed (${nextUnitsCompleted}) is less than total units (${nextTotalUnits})`,
+          },
+          { status: 400 }
+        )
+      }
+
       if (status !== undefined) current.status = status
       if (unitsCompleted !== undefined) current.unitsCompleted = unitsCompleted
       if (totalUnits !== undefined) current.totalUnits = totalUnits
