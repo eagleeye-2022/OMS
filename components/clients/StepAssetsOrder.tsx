@@ -44,10 +44,7 @@ export function StepAssetsOrder({ clientId }: StepAssetsOrderProps) {
       </div>
 
       <div>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Order Preferences</h3>
-        <p className="text-xs text-gray-400 mb-3">
-          Each product below is created as a real order once you save this client — it will appear in the Orders list and this client&apos;s Order History, exactly like an order placed from the Orders tab.
-        </p>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Order Preferences</h3>
         <Input label="Expected Delivery Date *" type="date" error={errors.deliveryDate?.message} {...register('deliveryDate')} />
 
         {fields.map((field, index) => (

@@ -19,6 +19,11 @@ const STAGE_BADGE_LABEL: Record<string, string> = {
   production: 'Production',
   shipping: 'Shipping',
   completed: 'Completed',
+  // stageOf's fallback bucket ('sales' key, see below) — a newly created
+  // order is already handed off to Creative before it has a status that
+  // ORDER_STAGE_BUCKET maps, so the badge must say Creative here too, not
+  // the team that created the order.
+  sales: 'Creative',
 }
 
 const STAGE_BADGE_COLOR: Record<string, string> = {
@@ -26,6 +31,7 @@ const STAGE_BADGE_COLOR: Record<string, string> = {
   production: 'bg-amber-100 text-amber-700',
   shipping: 'bg-teal-100 text-teal-700',
   completed: 'bg-green-100 text-green-700',
+  sales: 'bg-purple-100 text-purple-700',
 }
 
 function stageOf(status: OrderStatus): string {
@@ -96,7 +102,7 @@ export function OrderListPanel({ orders, total, loading, search, stage, onStageC
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-sm font-bold text-gray-900 truncate">{order.orderNumber}</span>
-                    <Badge label={STAGE_BADGE_LABEL[bucket] || 'Sales'} className={cn('shrink-0', STAGE_BADGE_COLOR[bucket] || 'bg-gray-100 text-gray-600')} />
+                    <Badge label={STAGE_BADGE_LABEL[bucket] || 'Creative'} className={cn('shrink-0', STAGE_BADGE_COLOR[bucket] || 'bg-purple-100 text-purple-700')} />
                   </div>
                   <Badge
                     label={delayed ? 'Delayed' : 'On Time'}

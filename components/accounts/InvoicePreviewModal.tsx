@@ -86,9 +86,9 @@ export function InvoicePreviewModal({ order, onClose, onReplace, onUpdated }: In
             <thead>
               <tr className="border-b border-gray-200 text-xs text-gray-400 uppercase">
                 <th className="text-left py-2">Item Description</th>
-                <th className="text-right py-2">Qty</th>
-                <th className="text-right py-2">Rate</th>
-                <th className="text-right py-2">Amount</th>
+                <th className="text-right py-2 pl-3">Qty</th>
+                <th className="text-right py-2 pl-3">Rate</th>
+                <th className="text-right py-2 pl-3">Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -97,9 +97,9 @@ export function InvoicePreviewModal({ order, onClose, onReplace, onUpdated }: In
                   <p className="font-medium text-gray-900">{order.productType}</p>
                   <p className="text-xs text-gray-400">{order.category}{order.sizeBreakdown ? ` · ${order.sizeBreakdown}` : ''}</p>
                 </td>
-                <td className="text-right py-3">{order.quantity.toLocaleString()}</td>
-                <td className="text-right py-3">{formatCurrency(rate)}</td>
-                <td className="text-right py-3">{formatCurrency(invoice.amount)}</td>
+                <td className="text-right py-3 pl-3">{order.quantity.toLocaleString()}</td>
+                <td className="text-right py-3 pl-3">{formatCurrency(rate)}</td>
+                <td className="text-right py-3 pl-3">{formatCurrency(invoice.amount)}</td>
               </tr>
             </tbody>
           </table>
@@ -147,7 +147,7 @@ export function InvoicePreviewModal({ order, onClose, onReplace, onUpdated }: In
               onClick={toggleSent} disabled={saving}
               className={`w-10 h-5.5 rounded-full transition-colors relative ${invoice.sentToClient ? 'bg-blue-600' : 'bg-gray-300'}`}
             >
-              <span className={`absolute top-0.5 w-4.5 h-4.5 bg-white rounded-full transition-transform ${invoice.sentToClient ? 'translate-x-5' : 'translate-x-0.5'}`} />
+              <span className={`absolute left-0.5 top-0.5 w-4.5 h-4.5 bg-white rounded-full transition-transform ${invoice.sentToClient ? 'translate-x-4.5' : 'translate-x-0'}`} />
             </button>
           </div>
           {invoice.sentToClient && invoice.sentAt && (

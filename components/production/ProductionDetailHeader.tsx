@@ -3,7 +3,7 @@
 import { AlertTriangle, Clock, X } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { cn, getDaysUntilDeadline } from '@/lib/utils'
-import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR, getProductionWorkflowState, PRODUCTION_WORKFLOW_STATE_LABEL, PRODUCTION_WORKFLOW_STATE_COLOR } from '@/lib/constants'
+import { getProductionWorkflowState, PRODUCTION_WORKFLOW_STATE_LABEL, PRODUCTION_WORKFLOW_STATE_COLOR } from '@/lib/constants'
 import type { IOrder, OrderStatus } from '@/types'
 
 interface ProductionDetailHeaderProps {
@@ -22,7 +22,6 @@ export function ProductionDetailHeader({ order, onClose }: ProductionDetailHeade
         <h2 className="text-lg font-bold text-gray-900">{order.orderNumber}</h2>
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <Badge label={PRODUCTION_WORKFLOW_STATE_LABEL[workflowState]} className={PRODUCTION_WORKFLOW_STATE_COLOR[workflowState]} />
-          <Badge label={ORDER_STATUS_LABEL[order.status as OrderStatus]} className={ORDER_STATUS_COLOR[order.status as OrderStatus]} />
           {!isDone && (
             <span className={cn(
               'flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium',

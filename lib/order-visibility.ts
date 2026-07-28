@@ -56,11 +56,15 @@ export function canAccessShipping(session: { role: Role; email?: string | null }
 // production-complete, invoice, status) so the Shipping delivery-address
 // card and the Accounts invoice "Bill To" block actually have data to
 // render, instead of always seeing an object with only companyName/email/
-// phone. List/summary routes (GET /api/orders, dashboard, activity log,
+// phone. Also carries `assets`/`sharedLinks` — the documents/links captured
+// from the client at onboarding (components/clients/StepAssetsOrder.tsx) —
+// so AssetsDocumentsCard can merge them in alongside order-level assets;
+// without this projection the client side of that card has nothing to read.
+// List/summary routes (GET /api/orders, dashboard, activity log,
 // notifications, payments) intentionally keep the narrower 'companyName'
 // projection — they never render an address or GST block.
 export const ORDER_CLIENT_DETAIL_FIELDS =
-  'companyName clientCode email phone contactPersonName designation billingAddress shippingAddress sameAsBilling gstNumber invoiceRecipientName invoiceEmail'
+  'companyName clientCode email phone contactPersonName designation billingAddress shippingAddress sameAsBilling gstNumber invoiceRecipientName invoiceEmail assets sharedLinks'
 
 // Client sub-fields that carry address/GST/billing detail — only meaningful
 // to the roles that actually ship or bill the order. Stripped from the

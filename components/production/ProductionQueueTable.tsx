@@ -2,7 +2,6 @@
 
 import { DataTable } from '@/components/ui/DataTable'
 import { Badge } from '@/components/ui/Badge'
-import { Avatar } from '@/components/ui/Avatar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, getDaysUntilDeadline } from '@/lib/utils'
 import {
@@ -95,7 +94,7 @@ export function ProductionQueueTable({ orders, loading, search, selectedId, onSe
             key: 'assignee', header: '', width: '48px', render: (row) => {
               const assignee = (row as unknown as IOrder).assignedTeam?.productionManager as IUser | string | undefined
               const name = assignee && typeof assignee !== 'string' ? assignee.name : undefined
-              return name ? <Avatar name={name} size="sm" /> : null
+              return name ? <span className="text-sm text-gray-700">{name}</span> : null
             },
           },
         ]}

@@ -22,7 +22,10 @@ const sizes = { sm: 'w-7 h-7 text-xs', md: 'w-9 h-9 text-sm', lg: 'w-12 h-12 tex
 
 export function Avatar({ name, size = 'md', className, color }: AvatarProps) {
   return (
-    <div className={cn('rounded-full flex items-center justify-center text-white font-semibold shrink-0', sizes[size], color || colorFor(name), className)}>
+    <div
+      title={name}
+      className={cn('rounded-full flex items-center justify-center text-white font-semibold shrink-0', sizes[size], color || colorFor(name), className)}
+    >
       {getInitials(name)}
     </div>
   )

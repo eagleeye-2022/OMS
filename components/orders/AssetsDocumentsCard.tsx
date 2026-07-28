@@ -6,13 +6,61 @@ import { FileText, ExternalLink, Plus, Upload, Loader2, Cloud } from 'lucide-rea
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'
-import type { IOrder } from '@/types'
+import type { IOrder, IClient } from '@/types'
 
 interface AssetsDocumentsCardProps {
   order: IOrder
   canEdit: boolean
   onUpdated: () => void
   title?: string
+}
+
+interface DisplayAsset {
+  key: string
+  label: string
+  url: string
+  kind: 'drive_link' | 'file'
+  mimeType?: string
+  // Overrides the trailing action badge (default: 'Google Drive' for
+  // drive_link, 'View'/'Open' for file) — only set for client-provided link
+  // items below, since they aren't necessarily Google Drive links and
+  // showing that label for a Website URL or Dropbox link would be wrong.
+  actionLabel?: string
+}
+
+const CLIENT_ASSET_LABELS: Record<keyof IClient['assets'], string> = {
+  companyLogo: 'Company Logo',
+  brandGuidelines: 'Brand Guidelines',
+  artworkReferences: 'Artwork References',
+  previousDesigns: 'Previous Designs',
+}
+
+const CLIENT_LINK_LABELS: Record<keyof IClient['sharedLinks'], string> = {
+  googleDriveFolder: 'Google Drive Folder',
+  dropboxFolder: 'Dropbox Folder',
+  websiteUrl: 'Website URL',
+  socialMedia: 'Social Media',
+}
+
+// Documents/links the client provided at onboarding (StepAssetsOrder.tsx)
+// live on the Client record, not the Order — merge them in read-only ahead
+// of the order's own added assets so this card shows everything received
+// from the client, not just what's been attached to this specific order.
+function getClientProvidedAssets(order: IOrder): DisplayAsset[] {
+  const client = typeof order.client === 'object' ? (order.client as IClient) : undefined
+  if (!client) return []
+
+  const assetEntries = Object.entries(client.assets || {}) as [keyof IClient['assets'], IClient['assets'][keyof IClient['assets']]][]
+  const fileItems: DisplayAsset[] = assetEntries
+    .filter(([, file]) => !!file)
+    .map(([key, file]) => ({ key: `client-asset-${key}`, label: CLIENT_ASSET_LABELS[key], url: file!.url, kind: 'file', mimeType: file!.mimeType }))
+
+  const linkEntries = Object.entries(client.sharedLinks || {}) as [keyof IClient['sharedLinks'], string | undefined][]
+  const linkItems: DisplayAsset[] = linkEntries
+    .filter(([, url]) => !!url)
+    .map(([key, url]) => ({ key: `client-link-${key}`, label: CLIENT_LINK_LABELS[key], url: url!, kind: 'drive_link', actionLabel: 'Open Link' }))
+
+  return [...fileItems, ...linkItems]
 }
 
 export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets & Documents' }: AssetsDocumentsCardProps) {
@@ -77,6 +125,11 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
     }
   }
 
+  const displayAssets: DisplayAsset[] = [
+    ...getClientProvidedAssets(order),
+    ...order.assets.map((asset, i) => ({ key: `order-${i}`, label: asset.label, url: asset.url, kind: asset.kind, mimeType: asset.mimeType })),
+  ]
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-4">
@@ -108,14 +161,14 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
       {error && <p className="text-xs text-red-600 mb-3">{error}</p>}
 
       <div className="space-y-2">
-        {order.assets.length === 0 ? (
+        {displayAssets.length === 0 ? (
           <p className="text-sm text-gray-400">No assets added yet.</p>
         ) : (
-          order.assets.map((asset, i) => {
+          displayAssets.map((asset) => {
             const isImage = asset.kind === 'file' && !!asset.mimeType?.startsWith('image/')
             return (
               <a
-                key={i}
+                key={asset.key}
                 href={asset.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -144,7 +197,7 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
                   <span className="text-gray-800 truncate group-hover:underline">{asset.label}</span>
                 </div>
                 <span className="flex items-center gap-1 text-blue-600 text-xs shrink-0">
-                  {asset.kind === 'drive_link' ? 'Google Drive' : isImage ? 'View' : 'Open'} <ExternalLink size={11} />
+                  {asset.actionLabel ?? (asset.kind === 'drive_link' ? 'Google Drive' : isImage ? 'View' : 'Open')} <ExternalLink size={11} />
                 </span>
               </a>
             )
