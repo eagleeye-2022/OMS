@@ -48,8 +48,21 @@ export async function POST(req: NextRequest) {
     console.warn(JSON.stringify({ event: 'client_ip_unresolved', email, path: 'request-login-otp' }))
   }
 
-  const ipAllowed = await checkRateLimit(`login-otp-request:${ip}`, 5, 15 * 60 * 1000)
-  const emailAllowed = await checkRateLimit(`login-otp-request:${email}`, 3, 15 * 60 * 1000)
+  // The tester flow gets its own, separately-keyed budget — per
+  // (email, testRole) instead of per email alone — so testing several
+  // modules in one sitting doesn't share (and exhaust) the 3-per-15-min
+  // budget sized for a single production login. Gated on isTesterEmail
+  // (the fixed roster in lib/testers.ts), not merely on the client sending
+  // a testRole field, so a non-tester can't widen their own OTP-request
+  // ceiling by adding that field to a /login-style request.
+  const isTesterFlow = !!testRole && isTesterEmail(email)
+  const ipKey = isTesterFlow ? `tester-login-otp-request:${ip}` : `login-otp-request:${ip}`
+  const ipLimit = isTesterFlow ? 20 : 5
+  const emailKey = isTesterFlow ? `tester-login-otp-request:${email}:${testRole}` : `login-otp-request:${email}`
+  const emailLimit = isTesterFlow ? 5 : 3
+
+  const ipAllowed = await checkRateLimit(ipKey, ipLimit, 15 * 60 * 1000)
+  const emailAllowed = await checkRateLimit(emailKey, emailLimit, 15 * 60 * 1000)
   if (!ipAllowed || !emailAllowed) {
     return NextResponse.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 })
   }

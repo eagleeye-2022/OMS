@@ -7,7 +7,7 @@ import { verifyLoginOtpSchema } from '@/validations/auth.schema'
 import { compareOtp } from '@/lib/otp'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { signToken, SESSION_COOKIE } from '@/lib/auth'
-import { getTesterAllowedRoles } from '@/lib/testers'
+import { getTesterAllowedRoles, isTesterEmail } from '@/lib/testers'
 import type { Role } from '@/lib/constants'
 
 const MAX_ATTEMPTS = 5
@@ -39,8 +39,18 @@ export async function POST(req: NextRequest) {
   const { otp, testRole, selectedRole } = parsed.data
 
   const ip = getClientIp(req)
-  const ipAllowed = await checkRateLimit(`verify-login-otp:${ip}`, 10, 15 * 60 * 1000)
-  const emailAllowed = await checkRateLimit(`verify-login-otp:${email}`, 8, 15 * 60 * 1000)
+  // Same rationale as request-login-otp/route.ts: a separately-keyed, more
+  // generous budget for the tester flow so verifying several role-switches
+  // in one sitting doesn't collide with a budget sized for one production
+  // login attempt.
+  const isTesterFlow = !!testRole && isTesterEmail(email)
+  const ipKey = isTesterFlow ? `tester-login-otp-verify:${ip}` : `verify-login-otp:${ip}`
+  const ipLimit = isTesterFlow ? 30 : 10
+  const emailKey = isTesterFlow ? `tester-login-otp-verify:${email}:${testRole}` : `verify-login-otp:${email}`
+  const emailLimit = isTesterFlow ? 10 : 8
+
+  const ipAllowed = await checkRateLimit(ipKey, ipLimit, 15 * 60 * 1000)
+  const emailAllowed = await checkRateLimit(emailKey, emailLimit, 15 * 60 * 1000)
   if (!ipAllowed || !emailAllowed) {
     return NextResponse.json({ success: false, error: 'Too many attempts. Please try again later.' }, { status: 429 })
   }
