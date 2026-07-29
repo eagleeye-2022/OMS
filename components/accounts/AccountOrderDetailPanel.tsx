@@ -13,7 +13,7 @@ import { AccountInvoiceFileCard } from './AccountInvoiceFileCard'
 import { AccountNotesCard } from './AccountNotesCard'
 import { PaymentReceiptModal } from './PaymentReceiptModal'
 import { isOrderOverdue } from './types'
-import { CLIENT_STATUS_LABEL, CLIENT_STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR, ORDER_STATUS_LABEL, ORDER_STATUS_COLOR, getShippingBlockReason } from '@/lib/constants'
+import { CLIENT_STATUS_LABEL, CLIENT_STATUS_COLOR, PRIORITY_LABEL, PRIORITY_COLOR, ORDER_STATUS_LABEL, ORDER_STATUS_COLOR, getShippingBlockReason, PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING } from '@/lib/constants'
 import { formatDate } from '@/lib/utils'
 import type { IActivityLog, IClient, IOrder, IPayment } from '@/types'
 
@@ -36,7 +36,8 @@ export function AccountOrderDetailPanel({ order, logs, loading, onUpdated, onClo
 
   const client = order.client as IClient
   const overdue = isOrderOverdue(order)
-  const shippingBlockReason = getShippingBlockReason(order.status)
+  const paymentTermsExempt = Boolean(client?.defaultPaymentTerms && PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING.includes(client.defaultPaymentTerms))
+  const shippingBlockReason = getShippingBlockReason(order.status, order.paymentStatus, paymentTermsExempt)
 
   return (
     <div className="space-y-5">

@@ -26,6 +26,14 @@ export function canViewFinanceDetails(role: Role): boolean {
   return CAN_VIEW_FINANCE.includes(role)
 }
 
+// Recording a payment is a narrower, write-side action than merely viewing
+// finance data — sales can see Payment Details (CAN_VIEW_FINANCE above) but
+// must not be able to log a payment against it; only admin/accounting can.
+// Deliberately its own list rather than reusing CAN_VIEW_FINANCE so the two
+// policies (view vs. log) can't accidentally drift back into being the same
+// check again.
+export const CAN_LOG_PAYMENT: Role[] = ['admin', 'accounting']
+
 // Shipping/courier/delivery fields — operationally sensitive in the same way
 // finance fields are, but distinct from them (a role can legitimately see
 // one without the other). Kept as its own list even though it currently
@@ -63,8 +71,14 @@ export function canAccessShipping(session: { role: Role; email?: string | null }
 // List/summary routes (GET /api/orders, dashboard, activity log,
 // notifications, payments) intentionally keep the narrower 'companyName'
 // projection — they never render an address or GST block.
+//
+// defaultPaymentTerms included so AccountOrderDetailPanel's
+// getShippingBlockReason call can tell whether this client's terms
+// deliberately expect the balance after shipping (see
+// PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING) — not a sensitive field, so it isn't
+// stripped for any role that already reaches CAN_VIEW_CLIENT_DETAILS.
 export const ORDER_CLIENT_DETAIL_FIELDS =
-  'companyName clientCode email phone contactPersonName designation billingAddress shippingAddress sameAsBilling gstNumber invoiceRecipientName invoiceEmail assets sharedLinks'
+  'companyName clientCode email phone contactPersonName designation billingAddress shippingAddress sameAsBilling gstNumber invoiceRecipientName invoiceEmail assets sharedLinks defaultPaymentTerms'
 
 // Client sub-fields that carry address/GST/billing detail — only meaningful
 // to the roles that actually ship or bill the order. Stripped from the

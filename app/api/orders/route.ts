@@ -7,7 +7,7 @@ import ActivityLog from '@/models/ActivityLog'
 import { orderSchema } from '@/validations/order.schema'
 import { stripSensitiveOrderFields, applyOwnQueueVisibility } from '@/lib/order-visibility'
 import { getDispatchBlockReason } from '@/lib/order-status'
-import { ORDER_STAGE_STATUSES, SHIPPING_RELEVANT_STATUSES } from '@/lib/constants'
+import { ORDER_STAGE_STATUSES, SHIPPING_RELEVANT_STATUSES, PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING } from '@/lib/constants'
 import { getNextOrderNumber, computeOrderMoney } from '@/lib/order-creation'
 
 function mongoError(err: unknown): NextResponse | null {
@@ -76,6 +76,30 @@ export async function GET(req: NextRequest) {
     // state) so the Shipping queue's "Delivered" summary card has data.
     if (relevantTo === 'shipping') {
       query.status = { $in: SHIPPING_RELEVANT_STATUSES }
+      // A freshly production-complete order ('shipping_ready') only actually
+      // shows up in the Shipping queue once full payment has been received —
+      // Accounts is the gatekeeper for shipment readiness, same rule as the
+      // dispatch-time gate in getDispatchBlockReason, just applied one step
+      // earlier (at visibility, not just the dispatch action). Once an order
+      // moves past 'shipping_ready' it's unaffected by this — dispatch was
+      // already gated on 'paid', so it can't have gotten there otherwise.
+      // Exempted: clients whose payment terms deliberately expect the
+      // balance after shipping (PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING) — those
+      // orders can never reach 'paid' before they ship by design, so without
+      // this exemption they'd be held from Shipping forever. Applied to every
+      // role hitting this endpoint (including admin), same as the status
+      // filter above it — this defines what "in the Shipping queue" means,
+      // not a per-role permission.
+      const exemptClients = await Client.find({ defaultPaymentTerms: { $in: PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING } }).select('_id').lean()
+      query.$and = [
+        {
+          $or: [
+            { status: { $ne: 'shipping_ready' } },
+            { paymentStatus: 'paid' },
+            { client: { $in: exemptClients.map((c) => c._id) } },
+          ],
+        },
+      ]
     }
     if (assignedToMe) {
       if (session.role === 'operations') {

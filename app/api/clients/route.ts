@@ -110,10 +110,17 @@ export async function POST(req: NextRequest) {
     // `client` field before the Client document itself exists yet — that
     // way the stamped `orderId`s land in the very first Client.create()
     // write instead of needing a second write-back afterward.
+    //
+    // Called unconditionally (not gated on isFinal/status==='active') —
+    // materializeOrderPreferences already only converts a preference row
+    // that carries complete order data (category, quantity, note, totalAmount
+    // > 0), regardless of the *client's* draft/active status. Gating this on
+    // isFinal used to mean a fully-filled-in order on the wizard's last step
+    // silently never became a real Order if the user clicked "Save as Draft"
+    // instead of "Save Client" — invisible everywhere (Orders module, even
+    // the client's own Order History) with no error or warning.
     const clientId = new Types.ObjectId()
-    const orders = isFinal
-      ? await materializeOrderPreferences(clientId.toString(), parsed.data.deliveryDate, parsed.data.productPreferences ?? [], { id: session.id, name: session.name })
-      : []
+    const orders = await materializeOrderPreferences(clientId.toString(), parsed.data.deliveryDate, parsed.data.productPreferences ?? [], { id: session.id, name: session.name })
 
     const client = await Client.create({
       ...parsed.data,

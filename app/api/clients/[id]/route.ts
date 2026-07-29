@@ -95,9 +95,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // /api/clients) creates a real Order for any row that doesn't already
     // have one, and stamps `orderId` onto rows that already do so they're
     // never converted twice.
-    const orders = isFinal
-      ? await materializeOrderPreferences(id, parsed.data.deliveryDate, parsed.data.productPreferences ?? [], { id: session.id, name: session.name })
-      : []
+    //
+    // Called unconditionally (not gated on isFinal) for the same reason as
+    // POST /api/clients — materializeOrderPreferences already only converts
+    // rows that carry complete order data, independent of the client's own
+    // draft/active status, so a fully-filled-in order on the wizard's last
+    // step no longer silently disappears if the user clicks "Save as Draft".
+    const orders = await materializeOrderPreferences(id, parsed.data.deliveryDate, parsed.data.productPreferences ?? [], { id: session.id, name: session.name })
 
     const client = await Client.findByIdAndUpdate(
       id,

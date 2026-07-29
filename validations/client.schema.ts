@@ -233,6 +233,7 @@ export const clientStep2Schema = z
   .object({
     clientType: z.enum(['individual', 'corporate']),
     gstNumber: z.string().regex(GSTIN_REGEX, 'Invalid GSTIN format').optional().or(z.literal('')),
+    defaultAdvanceRequirement: z.coerce.number().min(0, 'Advance requirement cannot be negative').max(100, 'Advance requirement cannot exceed 100%').optional(),
     defaultPaymentTerms: z.enum(PAYMENT_TERMS_VALUES).optional().or(z.literal('')),
     customPaymentTerms: z.string().optional().or(z.literal('')),
     typicalOrderValue: requiredTypicalOrderValue,

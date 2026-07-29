@@ -25,6 +25,7 @@ export function StepBillingDetails() {
   const { register, watch, formState: { errors } } = useFormContext<ClientFormValues>()
   const clientType = watch('clientType')
   const paymentTerms = watch('defaultPaymentTerms')
+  const advanceRequirement = register('defaultAdvanceRequirement')
 
   return (
     <div className="space-y-4">
@@ -47,7 +48,16 @@ export function StepBillingDetails() {
           max={100}
           placeholder="50"
           error={errors.defaultAdvanceRequirement?.message}
-          {...register('defaultAdvanceRequirement')}
+          {...advanceRequirement}
+          onChange={(e) => {
+            // min/max attrs don't stop typing past them; clamp so the field
+            // itself never displays a value outside the 0-100 range this
+            // represents (a percentage).
+            if (e.target.value !== '' && Number(e.target.value) > 100) {
+              e.target.value = '100'
+            }
+            advanceRequirement.onChange(e)
+          }}
         />
         <Select label="Default Payment Terms" options={PAYMENT_TERMS_OPTIONS} error={errors.defaultPaymentTerms?.message} {...register('defaultPaymentTerms')} />
       </div>

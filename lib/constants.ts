@@ -387,20 +387,28 @@ export const SHIPPING_RELEVANT_STATUSES: OrderStatus[] = ['shipping_ready', 'dis
 
 /**
  * Human-readable reason an order hasn't reached the Shipping queue yet, or
- * null once it has. Shipping eligibility is driven purely by production
- * completion — status reaching 'shipping_ready' via the explicit "Mark
- * Production Complete" action in Production — and has no relationship to
- * payment/invoice state. Orders can be fully paid (even 100% advance) long
- * before production starts, which is normal, not a bug. This exists so
- * modules outside Shipping (e.g. Accounts, where a fully-paid order can look
- * "done" from a finance point of view) can surface *why* the order hasn't
- * reached Shipping, instead of it just silently not appearing there.
+ * null once it has. Reaching 'shipping_ready' is still driven purely by
+ * production completion — status reaching 'shipping_ready' via the explicit
+ * "Mark Production Complete" action in Production. Once there, though, the
+ * order is only actually *visible* to Shipping once full payment has been
+ * received (mirrors the relevantTo=shipping query in app/api/orders/route.ts
+ * and the existing dispatch-time gate in getDispatchBlockReason) — unless its
+ * client's payment terms deliberately expect the balance after shipping
+ * (PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING), in which case it's exempt and shows
+ * up immediately like before. This exists so modules outside Shipping (e.g.
+ * Accounts) can surface *why* the order hasn't reached Shipping, instead of
+ * it just silently not appearing there.
  */
-export function getShippingBlockReason(status: OrderStatus): string | null {
-  if (SHIPPING_RELEVANT_STATUSES.includes(status)) return null
+export function getShippingBlockReason(status: OrderStatus, paymentStatus?: PaymentStatus, paymentTermsExempt?: boolean): string | null {
   if (status === 'cancelled') return 'This order was cancelled and will not ship.'
   if (PRE_DESIGN_APPROVAL_STATUSES.includes(status)) return "Design hasn't been approved yet, so production hasn't started."
-  return 'Production is still in progress — this order will move to Shipping once production is marked complete.'
+  if (!SHIPPING_RELEVANT_STATUSES.includes(status)) {
+    return 'Production is still in progress — this order will move to Shipping once production is marked complete.'
+  }
+  if (status === 'shipping_ready' && paymentStatus && paymentStatus !== 'paid' && !paymentTermsExempt) {
+    return 'Production is complete, but full payment must be received before this order is released to Shipping.'
+  }
+  return null
 }
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
@@ -513,6 +521,19 @@ export const PAYMENT_TERMS = {
 } as const
 
 export type PaymentTerms = (typeof PAYMENT_TERMS)[keyof typeof PAYMENT_TERMS]
+
+// Terms under which the balance is *expected* to clear after the order ships
+// (on delivery, or on a credit cycle) — used to exempt those orders from the
+// "hold at Shipping until fully paid" rule below (getShippingBlockReason /
+// the relevantTo=shipping query in app/api/orders/route.ts). Without this
+// exemption an order on one of these terms could never reach Shipping at
+// all: it can't be paid in full per its own terms until after it ships,
+// so the payment-hold would deadlock it forever. 'custom' is deliberately
+// excluded — its actual expectation isn't derivable from the enum, so it
+// stays under the strict "must be paid" rule rather than assumed exempt.
+export const PAYMENT_TERMS_ALLOW_UNPAID_SHIPPING: PaymentTerms[] = [
+  '50_advance_balance_delivery', '30_days_credit', '45_days_credit',
+]
 
 export const PAYMENT_TERMS_LABEL: Record<PaymentTerms, string> = {
   custom: 'Custom',

@@ -100,7 +100,10 @@ export function CreativeAssigneeCard({ order, canEdit, currentUserId, isCreative
         <Select
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          options={[{ value: '', label: 'Unassigned' }, ...options.map((u) => ({ value: u._id, label: u.name }))]}
+          // Email appended — some accounts share a display name (e.g. two
+          // 'Operations' seed accounts), which made them indistinguishable
+          // here and led to orders being assigned to the wrong same-named user.
+          options={[{ value: '', label: 'Unassigned' }, ...options.map((u) => ({ value: u._id, label: `${u.name} (${u.email})` }))]}
         />
       ) : (
         <div className="flex items-center justify-between gap-3">

@@ -6,7 +6,7 @@ import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
 import Notification from '@/models/Notification'
 import { paymentSchema } from '@/validations/payment.schema'
-import { CAN_VIEW_FINANCE } from '@/lib/order-visibility'
+import { CAN_VIEW_FINANCE, CAN_LOG_PAYMENT } from '@/lib/order-visibility'
 
 export async function GET(req: NextRequest) {
   try {
@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    if (!CAN_VIEW_FINANCE.includes(session.role)) {
-      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    if (!CAN_LOG_PAYMENT.includes(session.role)) {
+      return NextResponse.json({ success: false, error: 'Only admin or accounting can log a payment' }, { status: 403 })
     }
 
     const body = await req.json()

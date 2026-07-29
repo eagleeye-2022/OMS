@@ -9,15 +9,15 @@ import { assignTeamSchema } from '@/validations/order.schema'
 /**
  * Lightweight, purpose-built list of assignable team members per role —
  * intentionally separate from the admin-only GET /api/users (full user
- * management) so Sales can populate the assignment dropdowns without that
- * broader access.
+ * management). Team assignment is an admin-only action, so this stays
+ * admin-only too rather than exposing the same data via a broader route.
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    if (!['admin', 'sales'].includes(session.role)) {
-      return NextResponse.json({ success: false, error: 'Only sales or admin can view team assignment options' }, { status: 403 })
+    if (session.role !== 'admin') {
+      return NextResponse.json({ success: false, error: 'Only admin can view team assignment options' }, { status: 403 })
     }
 
     const { id } = await params
@@ -30,9 +30,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         .populate('assignedTeam.productionManager', 'name')
         .select('assignedTeam')
         .lean(),
-      User.find({ role: 'sales', isActive: true }).select('name role').lean(),
-      User.find({ role: 'creative', isActive: true }).select('name role').lean(),
-      User.find({ role: 'operations', isActive: true }).select('name role').lean(),
+      // email included so the picker can disambiguate accounts that share a
+      // display name (e.g. two 'Operations' seed accounts) — name alone was
+      // indistinguishable in the dropdown, leading to orders assigned to the
+      // wrong same-named account.
+      User.find({ role: 'sales', isActive: true }).select('name role email').lean(),
+      User.find({ role: 'creative', isActive: true }).select('name role email').lean(),
+      User.find({ role: 'operations', isActive: true }).select('name role email').lean(),
     ])
     if (!order) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
 
@@ -61,13 +65,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
     }
 
-    const isPrivileged = ['admin', 'sales'].includes(session.role)
+    const isPrivileged = session.role === 'admin'
     // A creative user may claim an unassigned task for themselves from the
-    // Unassigned queue — narrower than the admin/sales reassignment above:
-    // only their own id, only the creativeExecutive slot, nothing else in
-    // the same request. The "was actually unassigned" check happens
-    // atomically in the update filter below so two creatives can't race
-    // onto the same task.
+    // Unassigned queue — narrower than the admin reassignment above: only
+    // their own id, only the creativeExecutive slot, nothing else in the
+    // same request. The "was actually unassigned" check happens atomically
+    // in the update filter below so two creatives can't race onto the same
+    // task. Unrelated to the sales-assignment permission and left as-is.
     const isSelfClaim =
       session.role === 'creative' &&
       parsed.data.creativeExecutive === session.id &&
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       parsed.data.productionManager === undefined
     if (!isPrivileged && !isSelfClaim) {
       return NextResponse.json(
-        { success: false, error: 'Only sales, admin, or a creative user claiming their own unassigned task can assign the order team' },
+        { success: false, error: 'Only admin, or a creative user claiming their own unassigned task, can assign the order team' },
         { status: 403 }
       )
     }

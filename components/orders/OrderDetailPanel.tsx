@@ -16,6 +16,7 @@ import { AssetsDocumentsCard } from './AssetsDocumentsCard'
 import { InternalNotesCard } from './InternalNotesCard'
 import { OrderTimelineCard } from './OrderTimelineCard'
 import { DESIGN_STATUS, PRODUCTION_STAGE } from '@/lib/constants'
+import { CAN_LOG_PAYMENT } from '@/lib/order-visibility'
 import type { IActivityLog, IOrder, Role, DesignStatus, ProductionStage } from '@/types'
 
 const DESIGN_STATUS_OPTIONS = Object.values(DESIGN_STATUS).map((v) => ({ value: v, label: v.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()) }))
@@ -105,7 +106,16 @@ export function OrderDetailPanel({ order, logs, loading, role, hasAnyOrders = tr
   }
 
   const canEditCore = ['admin', 'sales'].includes(role)
+  // Team assignment is admin-only and, in the Sales module specifically,
+  // not just edit-disabled but not shown at all — narrower than canEditCore
+  // (which still covers the unrelated "Edit Details" action above), so sales
+  // keeps every other order-edit privilege it already had.
+  const canAssignTeam = role === 'admin'
   const canViewFinance = order.totalAmount != null
+  // Viewing Payment Details (canViewFinance, above) and logging a payment
+  // are different privileges — sales can see the numbers but, per the Sales
+  // module's own rule, must not be able to record a payment against them.
+  const canLogPayment = CAN_LOG_PAYMENT.includes(role)
 
   return (
     <div className="flex-1 w-full space-y-5 min-w-0 lg:h-full lg:overflow-y-auto">
@@ -119,15 +129,15 @@ export function OrderDetailPanel({ order, logs, loading, role, hasAnyOrders = tr
       </div>
 
       <div className={`grid grid-cols-1 gap-5 ${canViewFinance ? 'sm:grid-cols-2' : ''}`}>
-        <OrderSpecsCard order={order} />
-        {canViewFinance && <OrderFinanceCard order={order} onPaymentLogged={onRefresh} />}
+        <OrderSpecsCard order={order} showDetailRows={false} />
+        {canViewFinance && <OrderFinanceCard order={order} onPaymentLogged={onRefresh} canLogPayment={canLogPayment} />}
       </div>
 
       {role === 'creative' && <CreativeUpdateCard order={order} onUpdated={onRefresh} />}
       {role === 'operations' && <ProductionUpdateCard order={order} onUpdated={onRefresh} />}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <AssignedTeamCard order={order} canEdit={canEditCore} onUpdated={onRefresh} />
+      <div className={`grid grid-cols-1 gap-5 ${canAssignTeam ? 'sm:grid-cols-2' : ''}`}>
+        {canAssignTeam && <AssignedTeamCard order={order} canEdit={canAssignTeam} onUpdated={onRefresh} />}
         <AssetsDocumentsCard order={order} canEdit={['admin', 'sales', 'creative', 'operations'].includes(role)} onUpdated={onRefresh} />
       </div>
 

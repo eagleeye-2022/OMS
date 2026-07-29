@@ -75,7 +75,10 @@ export function ProductionAssigneeCard({ order, canEdit, onUpdated }: Production
         <Select
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          options={[{ value: '', label: 'Unassigned' }, ...options.map((u) => ({ value: u._id, label: u.name }))]}
+          // Email appended — the two seed 'Operations' accounts share the same
+          // display name, which made them indistinguishable here and led to
+          // orders being assigned to the wrong same-named user.
+          options={[{ value: '', label: 'Unassigned' }, ...options.map((u) => ({ value: u._id, label: `${u.name} (${u.email})` }))]}
         />
       ) : (
         <div className="flex items-center gap-3">

@@ -7,6 +7,9 @@ import type { IOrder, Priority } from '@/types'
 
 interface OrderSpecsCardProps {
   order: IOrder
+  /** Defaults to true (pre-existing behavior) — the Sales/Orders module
+   *  passes false to show only the description paragraph, no detail rows. */
+  showDetailRows?: boolean
 }
 
 /**
@@ -18,7 +21,7 @@ interface OrderSpecsCardProps {
  * them (see lib/order-visibility.ts), so an absent field here means "not
  * visible to this role," not "not entered."
  */
-export function OrderSpecsCard({ order }: OrderSpecsCardProps) {
+export function OrderSpecsCard({ order, showDetailRows = true }: OrderSpecsCardProps) {
   const unit = order.quantity === 1 ? 'pc' : 'pcs'
   const canViewFinance = order.totalAmount != null
   const unitPrice = canViewFinance && order.quantity > 0 ? order.totalAmount! / order.quantity : null
@@ -48,19 +51,21 @@ export function OrderSpecsCard({ order }: OrderSpecsCardProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Product Details</h3>
-      <p className="text-sm text-gray-600 mb-4">
+      <p className={`text-sm text-gray-600 ${showDetailRows ? 'mb-4' : ''}`}>
         {order.quantity.toLocaleString()} {unit} of {order.category}
         {order.productType ? ` — ${order.productType}` : ''}
         {order.sizeBreakdown ? `. Size breakdown: ${order.sizeBreakdown}` : ''}.
       </p>
-      <div className="space-y-3">
-        {rows.map(([label, value]) => (
-          <div key={label as string} className="flex justify-between items-start gap-4 text-sm">
-            <span className="text-gray-500">{label}</span>
-            <span className="text-gray-900 font-medium text-right">{value}</span>
-          </div>
-        ))}
-      </div>
+      {showDetailRows && (
+        <div className="space-y-3">
+          {rows.map(([label, value]) => (
+            <div key={label as string} className="flex justify-between items-start gap-4 text-sm">
+              <span className="text-gray-500">{label}</span>
+              <span className="text-gray-900 font-medium text-right">{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

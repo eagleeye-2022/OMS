@@ -93,7 +93,11 @@ export function AssignedTeamCard({ order, canEdit, onUpdated }: AssignedTeamCard
                   onChange={(e) => setForm((f) => ({ ...f, [slot.key]: e.target.value }))}
                   options={[
                     { value: '', label: 'Unassigned' },
-                    ...(options[slot.roleFilter] || []).map((u) => ({ value: u._id, label: u.name })),
+                    // Email appended — several seed accounts across roles share
+                    // the same display name (e.g. two 'Operations' accounts),
+                    // which made them indistinguishable in this dropdown and
+                    // led to orders being assigned to the wrong same-named user.
+                    ...(options[slot.roleFilter] || []).map((u) => ({ value: u._id, label: `${u.name} (${u.email})` })),
                   ]}
                 />
               ) : (

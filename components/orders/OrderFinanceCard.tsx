@@ -12,6 +12,10 @@ import type { IOrder, PaymentStatus } from '@/types'
 interface OrderFinanceCardProps {
   order: IOrder
   onPaymentLogged: () => void
+  /** Defaults to true (pre-existing behavior) — callers that need to restrict
+   *  the Log Payment action (e.g. the Sales/Orders module, where only
+   *  admin/accounting may log a payment) pass false explicitly. */
+  canLogPayment?: boolean
 }
 
 function LogPaymentModal({ order, onClose, onSaved }: { order: IOrder; onClose: () => void; onSaved: () => void }) {
@@ -69,7 +73,7 @@ function LogPaymentModal({ order, onClose, onSaved }: { order: IOrder; onClose: 
   )
 }
 
-export function OrderFinanceCard({ order, onPaymentLogged }: OrderFinanceCardProps) {
+export function OrderFinanceCard({ order, onPaymentLogged, canLogPayment = true }: OrderFinanceCardProps) {
   const [modalOpen, setModalOpen] = useState(false)
 
   if (order.totalAmount == null) return null
@@ -106,7 +110,7 @@ export function OrderFinanceCard({ order, onPaymentLogged }: OrderFinanceCardPro
         </div>
       </div>
 
-      {balanceDue > 0 && (
+      {balanceDue > 0 && canLogPayment && (
         <Button variant="outline" className="w-full justify-center mt-4" onClick={() => setModalOpen(true)}>Log Payment</Button>
       )}
 
