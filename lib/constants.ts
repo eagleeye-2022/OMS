@@ -257,7 +257,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
 // Matched case-insensitively; keep this in sync with the operations entries in
 // app/api/admin/bootstrap/route.ts's DEMO_USERS.
 export const SHIPPING_EMAIL_ALLOWLIST: string[] = [
-  'ordersbloopers@gmail.com',
+  'orderbloopers@gmail.com',
   'ishitavishwakarma220743@acropolis.in',
 ]
 

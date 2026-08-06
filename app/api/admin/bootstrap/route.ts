@@ -49,7 +49,7 @@ export const dynamic = 'force-dynamic'
 // ============================================================================
 const DEMO_USERS: Array<{ name: string; email: string; role: Role; phone: string }> = [
   { name: 'Admin', email: 'bloopersstore@gmail.com', role: 'admin', phone: '' },
-  { name: 'Operations', email: 'ordersbloopers@gmail.com', role: 'operations', phone: '' },
+  { name: 'Operations', email: 'orderbloopers@gmail.com', role: 'operations', phone: '' },
   { name: 'Sales', email: 'officialbloopersstore@gmail.com', role: 'sales', phone: '' },
   { name: 'Accounting', email: 'accounts@bloopersstore.in', role: 'accounting', phone: '' },
   { name: 'Design & Creative', email: 'bloopersdesign@gmail.com', role: 'creative', phone: '' },

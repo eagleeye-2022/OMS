@@ -17,7 +17,7 @@ export async function getNextOrderNumber(): Promise<string> {
     .sort({ orderNumber: -1 })
     .select('orderNumber')
     .lean()
-  let nextNum = 2000
+  let nextNum = 1
   if (lastOrder && lastOrder.orderNumber) {
     const match = lastOrder.orderNumber.match(/\d+/)
     if (match) nextNum = parseInt(match[0]) + 1
