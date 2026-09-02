@@ -63,7 +63,21 @@ export default function TesterLoginPage() {
       body: JSON.stringify({ email, testRole }),
     })
     const data = await res.json()
-    return data as { success: boolean; error?: string }
+    if (data.success) {
+      console.log(
+        `[OMS Auth] Email requested from "${data.from || 'default sender'}" to "${data.to || email}" | Status: ${
+          data.delivered ? 'Sent' : 'Not sent'
+        } (reason: ${data.reason})`
+      )
+    }
+    return data as {
+      success: boolean
+      error?: string
+      from?: string
+      to?: string
+      delivered?: boolean
+      reason?: string
+    }
   }
 
   const handlePickRole = (role: Role) => {

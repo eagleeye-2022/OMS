@@ -161,7 +161,15 @@ export async function POST(req: NextRequest) {
     // does not grant anything and mirrors what verify-login-otp will return
     // on success anyway, so this discloses nothing verify-login-otp doesn't
     // already reveal one step later for this same already-authorized email.
-    return NextResponse.json({ success: true, message: 'A login code has been sent to your email.', role: user.role })
+    return NextResponse.json({
+      success: true,
+      message: 'A login code has been sent to your email.',
+      role: user.role,
+      from: mailConfig.from,
+      to: user.email,
+      delivered: mailResult.delivered,
+      reason: mailResult.reason,
+    })
   } catch (err) {
     console.error('[auth] Request-login-otp error:', err instanceof Error ? err.message : err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
