@@ -123,12 +123,20 @@ export interface IClient {
   lastOrderDate?: string | null
 }
 
+export interface INoteAttachment {
+  url: string
+  originalName: string
+  mimeType?: string
+  size?: number
+}
+
 export interface IOrderNote {
   text: string
   authorId: IUser | string
   authorName: string
   at: string
   noteType: NoteType
+  attachment?: INoteAttachment
 }
 
 export interface IOrderAsset {

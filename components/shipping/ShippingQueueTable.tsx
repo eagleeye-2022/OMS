@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { cn, formatDate } from '@/lib/utils'
 import { ORDER_STATUS_LABEL, ORDER_STATUS_COLOR } from '@/lib/constants'
-import type { IClient, IOrder, OrderStatus } from '@/types'
+import type { IClient, IOrder } from '@/types'
 
 interface ShippingQueueTableProps {
   orders: IOrder[]

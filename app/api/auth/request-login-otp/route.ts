@@ -131,6 +131,9 @@ export async function POST(req: NextRequest) {
     await OtpToken.updateMany({ user: user._id, used: false, purpose: 'login' }, { used: true })
 
     const otp = generateOtp()
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`\n========================================\n🔑 [DEV OTP] Login Code for ${user.email}: ${otp}\n========================================\n`)
+    }
     const otpHash = await hashOtp(otp)
     await OtpToken.create({
       user: user._id,

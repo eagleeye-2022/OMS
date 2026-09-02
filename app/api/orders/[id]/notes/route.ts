@@ -71,8 +71,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, error: 'You do not have access to this order' }, { status: 403 })
     }
 
-    const note = { text: parsed.data.text, authorId: session.id, authorName: session.name, at: new Date(), noteType }
-    const order = await Order.findByIdAndUpdate(id, { $push: { notes: note } }, { new: true }).select('notes orderNumber').lean()
+    const noteText = parsed.data.text?.trim() || (parsed.data.attachment ? `[Attachment: ${parsed.data.attachment.originalName}]` : '')
+    const note = {
+      text: noteText,
+      authorId: session.id,
+      authorName: session.name,
+      at: new Date(),
+      noteType,
+      ...(parsed.data.attachment ? { attachment: parsed.data.attachment } : {}),
+    }
+
+    const updateOps: Record<string, unknown> = { $push: { notes: note } }
+    if (parsed.data.attachment) {
+      const asset = {
+        label: parsed.data.attachment.originalName,
+        url: parsed.data.attachment.url,
+        kind: 'file' as const,
+        mimeType: parsed.data.attachment.mimeType,
+        size: parsed.data.attachment.size,
+        addedBy: session.id,
+        addedByName: session.name,
+        addedAt: new Date(),
+      }
+      updateOps.$push = { notes: note, assets: asset }
+    }
+
+    const order = await Order.findByIdAndUpdate(id, updateOps, { new: true }).select('notes orderNumber').lean()
     if (!order) return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 })
 
     await ActivityLog.create({

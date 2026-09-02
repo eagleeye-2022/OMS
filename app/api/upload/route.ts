@@ -48,8 +48,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'clientId or orderId is required' }, { status: 400 })
     }
 
-    if (!ALLOWED_MIME_TYPES.has(file.type)) {
-      return NextResponse.json({ success: false, error: 'Unsupported file type. Allowed: PNG, JPG, WEBP, SVG, PDF' }, { status: 400 })
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    const isExcelOrCsvExt = ext === 'xlsx' || ext === 'xls' || ext === 'csv'
+    if (!ALLOWED_MIME_TYPES.has(file.type) && !isExcelOrCsvExt) {
+      return NextResponse.json({ success: false, error: 'Unsupported file type. Allowed: PNG, JPG, WEBP, SVG, PDF, XLSX, XLS, CSV' }, { status: 400 })
     }
     if (file.size > MAX_UPLOAD_FILE_SIZE) {
       return NextResponse.json({ success: false, error: `File exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} size limit` }, { status: 400 })

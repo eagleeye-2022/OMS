@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { StatCard } from '@/components/ui/StatCard'
 import { Badge } from '@/components/ui/Badge'
@@ -346,7 +347,7 @@ export function DashboardView() {
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-900">Recent Active Orders</h2>
-          <a href="/orders" className="text-xs text-blue-600 hover:text-blue-700 font-medium">View All</a>
+          <Link href="/orders" className="text-xs text-blue-600 hover:text-blue-700 font-medium">View All</Link>
         </div>
         <DataTable
           data={recentOrders as unknown as Record<string, unknown>[]}
@@ -354,9 +355,9 @@ export function DashboardView() {
           columns={[
             {
               key: 'orderNumber', header: 'Order No.', render: (row) => (
-                <a href={`/orders/${row._id as string}`} className="font-semibold text-gray-900 hover:text-blue-600 text-xs">
+                <Link href={`/orders/${row._id as string}`} className="font-semibold text-gray-900 hover:text-blue-600 text-xs">
                   {row.orderNumber as string}
-                </a>
+                </Link>
               )
             },
             {
@@ -397,12 +398,12 @@ export function DashboardView() {
       </div>
 
       {/* Floating action button */}
-      <a
+      <Link
         href="/orders?new=1"
         className="fixed bottom-6 right-6 w-12 h-12 bg-gray-900 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-700 transition-colors"
       >
         <Plus size={20} />
-      </a>
+      </Link>
     </div>
   )
 }

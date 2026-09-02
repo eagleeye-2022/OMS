@@ -131,8 +131,7 @@ export function applyOwnQueueVisibility(
     query[assignmentField] = { $exists: false }
     return
   }
-  if (view === 'all' && allAssignedViewRoles.includes(session.role)) {
-    query[assignmentField] = { $exists: true }
+  if (view === 'all' && (allAssignedViewRoles.includes(session.role) || session.role === 'admin')) {
     return
   }
   if (restrictedRoles.includes(session.role)) {

@@ -3,16 +3,17 @@
 import { SearchBar } from '@/components/ui/SearchBar'
 import { cn } from '@/lib/utils'
 
+export type ProductionTab = 'mine' | 'unassigned' | 'all'
+
 interface ProductionHeaderProps {
   total: number
   search: string
   onSearchChange: (value: string) => void
-  /** True for a 'production' role viewer — swaps the admin "My Batches / All" toggle for "My Queue / All", since a Production user's "All" still excludes unassigned batches (Admin-only), unlike Admin's. */
   isProductionRole: boolean
   assignedToMe: boolean
   onAssignedToMeChange: (value: boolean) => void
-  productionShowAll: boolean
-  onProductionShowAllChange: (value: boolean) => void
+  productionTab: ProductionTab
+  onProductionTabChange: (tab: ProductionTab) => void
 }
 
 export function ProductionHeader({
@@ -22,15 +23,22 @@ export function ProductionHeader({
   isProductionRole,
   assignedToMe,
   onAssignedToMeChange,
-  productionShowAll,
-  onProductionShowAllChange,
+  productionTab,
+  onProductionTabChange,
 }: ProductionHeaderProps) {
+  const getSubTitle = () => {
+    if (!isProductionRole) return 'orders in production'
+    if (productionTab === 'unassigned') return 'unassigned production orders'
+    if (productionTab === 'all') return 'total production orders'
+    return 'batches assigned to you'
+  }
+
   return (
     <div className="flex items-center justify-between gap-4 flex-wrap">
       <div>
         <h1 className="text-xl font-bold text-gray-900">Production Queue</h1>
         <p className="text-sm text-gray-500">
-          {total} {isProductionRole ? (productionShowAll ? 'assigned production orders' : 'batches assigned to you') : 'orders in production'}
+          {total} {getSubTitle()}
         </p>
       </div>
       <div className="flex items-center gap-3 flex-wrap">
@@ -38,14 +46,20 @@ export function ProductionHeader({
           {isProductionRole ? (
             <>
               <button
-                onClick={() => onProductionShowAllChange(false)}
-                className={cn('px-3 py-1.5 rounded-md font-medium transition-colors', !productionShowAll ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500')}
+                onClick={() => onProductionTabChange('mine')}
+                className={cn('px-3 py-1.5 rounded-md font-medium transition-colors', productionTab === 'mine' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500')}
               >
                 My Queue
               </button>
               <button
-                onClick={() => onProductionShowAllChange(true)}
-                className={cn('px-3 py-1.5 rounded-md font-medium transition-colors', productionShowAll ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500')}
+                onClick={() => onProductionTabChange('unassigned')}
+                className={cn('px-3 py-1.5 rounded-md font-medium transition-colors', productionTab === 'unassigned' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500')}
+              >
+                Unassigned
+              </button>
+              <button
+                onClick={() => onProductionTabChange('all')}
+                className={cn('px-3 py-1.5 rounded-md font-medium transition-colors', productionTab === 'all' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500')}
               >
                 All
               </button>

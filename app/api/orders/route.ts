@@ -123,19 +123,15 @@ export async function GET(req: NextRequest) {
       })
     }
     // Production users' default queue ("My Queue") is their own assigned
-    // tasks; `view=all` broadens that to every *assigned* production order
-    // (teammates' batches included) but still excludes unassigned ones —
-    // unlike Creative, there is no self-serve "Unassigned" pickup bucket for
-    // Production at all: `unassignedViewRoles: ['admin']` means a Production
-    // session forging `view=unassigned` still falls through to the "my
-    // assigned tasks" restriction instead of seeing unassigned work.
+    // tasks; `view=unassigned` shows unassigned batches ready for production,
+    // and `view=all` broadens that to every production order.
     if (relevantTo === 'production') {
       applyOwnQueueVisibility(query, session, {
         restrictedRoles: ['operations'],
         assignmentField: 'assignedTeam.productionManager',
         view,
-        unassignedViewRoles: ['admin'],
-        allAssignedViewRoles: ['operations'],
+        unassignedViewRoles: ['operations', 'admin'],
+        allAssignedViewRoles: ['operations', 'admin'],
       })
     }
     if (search) {

@@ -46,8 +46,17 @@ export const updateOrderStatusSchema = z.object({
 })
 
 export const orderNoteSchema = z.object({
-  text: z.string().min(1, 'Note text is required'),
+  text: z.string().optional(),
   noteType: z.enum(['general', 'creative', 'production', 'shipping', 'accounts']).optional(),
+  attachment: z.object({
+    url: z.string().min(1, 'Attachment URL is required'),
+    originalName: z.string().min(1, 'Original name is required'),
+    mimeType: z.string().optional(),
+    size: z.number().optional(),
+  }).optional(),
+}).refine((data) => (data.text && data.text.trim().length > 0) || !!data.attachment, {
+  message: 'Note text or an attachment is required',
+  path: ['text'],
 })
 
 export const orderAssetSchema = z.object({

@@ -76,7 +76,7 @@ export function ProductionDetailPage({ order, logs, loading, isAdmin, canEditSta
         </div>
       )}
 
-      <ProductionAssigneeCard order={order} canEdit={isAdmin} onUpdated={onUpdated} />
+      <ProductionAssigneeCard order={order} canEdit={isAdmin} isProductionRole={!isAdmin && canEditStages} currentUserId={currentUserId} onUpdated={onUpdated} />
       <OrderSpecsCard order={order} />
 
       {/* Read-only view of the design files/links Creative uploaded — the same

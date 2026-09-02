@@ -8,9 +8,19 @@ export const ALLOWED_UPLOAD_MIME_TYPES = [
   'image/webp',
   'image/svg+xml',
   'application/pdf',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/csv',
+  'application/csv',
+  'text/x-csv',
 ] as const
 
-export const ALLOWED_UPLOAD_ACCEPT = ALLOWED_UPLOAD_MIME_TYPES.join(',')
+export const ALLOWED_UPLOAD_ACCEPT = [
+  ...ALLOWED_UPLOAD_MIME_TYPES,
+  '.xlsx',
+  '.xls',
+  '.csv',
+].join(',')
 
 // Kept under Vercel's ~4.5MB default request-body ceiling for Node serverless
 // functions — anything larger gets rejected upstream of this route handler
@@ -22,8 +32,12 @@ export const MAX_UPLOAD_FILE_SIZE_LABEL = '4MB'
  * message instead of a round trip to the server. The API route re-validates
  * independently — this is a UX convenience, not the security boundary. */
 export function validateUploadFile(file: File): string | null {
-  if (!ALLOWED_UPLOAD_MIME_TYPES.includes(file.type as (typeof ALLOWED_UPLOAD_MIME_TYPES)[number])) {
-    return 'Unsupported file type. Allowed: PNG, JPG, WEBP, SVG, PDF'
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  const isExcelOrCsvExt = ext === 'xlsx' || ext === 'xls' || ext === 'csv'
+  const isAllowedType = ALLOWED_UPLOAD_MIME_TYPES.includes(file.type as (typeof ALLOWED_UPLOAD_MIME_TYPES)[number])
+  
+  if (!isAllowedType && !isExcelOrCsvExt) {
+    return 'Unsupported file type. Allowed: PNG, JPG, WEBP, SVG, PDF, XLSX, XLS, CSV'
   }
   if (file.size > MAX_UPLOAD_FILE_SIZE) {
     return `File exceeds the ${MAX_UPLOAD_FILE_SIZE_LABEL} size limit`
