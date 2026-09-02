@@ -61,7 +61,22 @@ export default function LoginPage() {
       body: JSON.stringify({ email, selectedRole }),
     })
     const data = await res.json()
-    return data as { success: boolean; error?: string; role?: Role }
+    if (data.success) {
+      console.log(
+        `[OMS Auth] Email requested from "${data.from || 'default sender'}" to "${data.to || email}" | Status: ${
+          data.delivered ? 'Sent' : 'Not sent'
+        } (reason: ${data.reason})`
+      )
+    }
+    return data as {
+      success: boolean
+      error?: string
+      role?: Role
+      from?: string
+      to?: string
+      delivered?: boolean
+      reason?: string
+    }
   }
 
   const handlePickRole = (role: Role) => {
