@@ -72,14 +72,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // same request. The "was actually unassigned" check happens atomically
     // in the update filter below so two creatives can't race onto the same
     // task. Unrelated to the sales-assignment permission and left as-is.
-    const isSelfClaim =
+    const isCreativeSelfClaim =
       session.role === 'creative' &&
       parsed.data.creativeExecutive === session.id &&
       parsed.data.salesExecutive === undefined &&
       parsed.data.productionManager === undefined
+
+    const isProductionSelfClaim =
+      session.role === 'operations' &&
+      parsed.data.productionManager === session.id &&
+      parsed.data.salesExecutive === undefined &&
+      parsed.data.creativeExecutive === undefined
+
+    const isSelfClaim = isCreativeSelfClaim || isProductionSelfClaim
+
     if (!isPrivileged && !isSelfClaim) {
       return NextResponse.json(
-        { success: false, error: 'Only admin, or a creative user claiming their own unassigned task, can assign the order team' },
+        { success: false, error: 'Only admin, or a creative/production user claiming their own unassigned task, can assign the order team' },
         { status: 403 }
       )
     }
@@ -104,7 +113,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = { _id: id }
-    if (isSelfClaim) filter['assignedTeam.creativeExecutive'] = { $exists: false }
+    if (isCreativeSelfClaim) filter['assignedTeam.creativeExecutive'] = { $exists: false }
+    if (isProductionSelfClaim) filter['assignedTeam.productionManager'] = { $exists: false }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateOp: Record<string, any> = {}

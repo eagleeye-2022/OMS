@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Image from 'next/image'
-import { FileText, ExternalLink, Plus, Upload, Loader2, Cloud } from 'lucide-react'
+import { FileText, ExternalLink, Plus, Upload, Loader2, Cloud, FileSpreadsheet } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'
@@ -166,6 +166,12 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
         ) : (
           displayAssets.map((asset) => {
             const isImage = asset.kind === 'file' && !!asset.mimeType?.startsWith('image/')
+            const isSpreadsheet = asset.kind === 'file' && (
+              !!asset.mimeType?.includes('sheet') ||
+              !!asset.mimeType?.includes('excel') ||
+              !!asset.mimeType?.includes('csv') ||
+              /\.(xlsx|xls|csv)$/i.test(asset.label)
+            )
             return (
               <a
                 key={asset.key}
@@ -191,6 +197,8 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
                     <span className="h-10 w-10 rounded-md bg-gray-50 border border-gray-200 flex items-center justify-center shrink-0">
                       {asset.kind === 'drive_link'
                         ? <Cloud size={16} className="text-gray-400" />
+                        : isSpreadsheet
+                        ? <FileSpreadsheet size={16} className="text-emerald-600" />
                         : <FileText size={16} className="text-gray-400" />}
                     </span>
                   )}

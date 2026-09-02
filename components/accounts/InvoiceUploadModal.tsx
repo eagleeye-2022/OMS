@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, FileText, Send, Cloud, Download, X } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
-import { Input, Select, Textarea } from '@/components/ui/Input'
+import { Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { cn, formatCurrency, formatFileSize } from '@/lib/utils'
 import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'

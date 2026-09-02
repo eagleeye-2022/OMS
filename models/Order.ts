@@ -7,6 +7,12 @@ export interface IOrderNote {
   authorName: string
   at: Date
   noteType: NoteType
+  attachment?: {
+    url: string
+    originalName: string
+    mimeType?: string
+    size?: number
+  }
 }
 
 export interface IOrderAsset {
@@ -106,6 +112,12 @@ const OrderNoteSchema = new Schema<IOrderNote>(
     authorName: { type: String, required: true },
     at: { type: Date, default: Date.now },
     noteType: { type: String, enum: ['general', 'creative', 'production', 'shipping', 'accounts'], default: 'general' },
+    attachment: {
+      url: { type: String },
+      originalName: { type: String },
+      mimeType: { type: String },
+      size: { type: Number },
+    },
   },
   { _id: false }
 )

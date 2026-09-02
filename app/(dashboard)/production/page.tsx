@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ProductionHeader } from '@/components/production/ProductionHeader'
+import { ProductionHeader, type ProductionTab } from '@/components/production/ProductionHeader'
 import { ProductionSummaryCards } from '@/components/production/ProductionSummaryCards'
 import { ProductionQueueTable } from '@/components/production/ProductionQueueTable'
 import { ProductionDetailDrawer } from '@/components/production/ProductionDetailDrawer'
@@ -15,9 +15,7 @@ export default function ProductionPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [assignedToMe, setAssignedToMe] = useState(false)
-  // Production-role-only tab: mutually exclusive with assignedToMe above
-  // (that one stays Admin's "My Batches / All") — see ProductionHeader.
-  const [productionShowAll, setProductionShowAll] = useState(false)
+  const [productionTab, setProductionTab] = useState<ProductionTab>('mine')
 
   const [selectedId, setSelectedId] = useState<string | undefined>()
   const [selectedOrder, setSelectedOrder] = useState<IOrder | null>(null)
@@ -35,14 +33,15 @@ export default function ProductionPage() {
   const latestListKeyRef = useRef('')
   const latestOrderIdRef = useRef<string | undefined>(undefined)
 
-  const loadQueue = useCallback(async (q = '', mine = false, showAll = false, silent = false) => {
-    const key = `${q}::${mine}::${showAll}`
+  const loadQueue = useCallback(async (q = '', mine = false, tab: ProductionTab = 'mine', silent = false) => {
+    const key = `${q}::${mine}::${tab}`
     latestListKeyRef.current = key
     if (!silent) setLoading(true)
     try {
       const params = new URLSearchParams({ search: q, relevantTo: 'production', limit: '200' })
       if (mine) params.set('assignedToMe', 'true')
-      if (showAll) params.set('view', 'all')
+      if (tab === 'unassigned') params.set('view', 'unassigned')
+      else if (tab === 'all') params.set('view', 'all')
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
       if (latestListKeyRef.current !== key) return
@@ -71,11 +70,11 @@ export default function ProductionPage() {
     }
   }, [])
 
-  useEffect(() => { loadQueue(search, assignedToMe, productionShowAll) }, [loadQueue]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadQueue(search, assignedToMe, productionTab) }, [loadQueue]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const t = setTimeout(() => loadQueue(search, assignedToMe, productionShowAll), 300)
+    const t = setTimeout(() => loadQueue(search, assignedToMe, productionTab), 300)
     return () => clearTimeout(t)
-  }, [search, assignedToMe, productionShowAll, loadQueue])
+  }, [search, assignedToMe, productionTab, loadQueue])
 
   useEffect(() => {
     if (selectedId) loadDetail(selectedId)
@@ -90,7 +89,7 @@ export default function ProductionPage() {
     if (selectedId) loadDetail(selectedId)
     // Silent: a stage/remark/assignee/completion change on the open ticket
     // shouldn't blank the whole queue into a loading skeleton.
-    loadQueue(search, assignedToMe, productionShowAll, true)
+    loadQueue(search, assignedToMe, productionTab, true)
   }
 
   return (
@@ -102,8 +101,8 @@ export default function ProductionPage() {
         isProductionRole={isProductionRole}
         assignedToMe={assignedToMe}
         onAssignedToMeChange={setAssignedToMe}
-        productionShowAll={productionShowAll}
-        onProductionShowAllChange={setProductionShowAll}
+        productionTab={productionTab}
+        onProductionTabChange={setProductionTab}
       />
 
       <ProductionSummaryCards orders={orders} />
