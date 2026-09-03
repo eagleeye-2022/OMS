@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { Paperclip, Send, Loader2, X, ExternalLink, FileText, FileSpreadsheet } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload, type UploadResult } from '@/lib/upload'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload, parseJsonResponse, type UploadResult } from '@/lib/upload'
 import type { IOrder } from '@/types'
 import type { NoteType } from '@/lib/constants'
 
@@ -75,7 +75,7 @@ export function InternalNotesCard({ order, onUpdated, title = 'Internal Notes', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      const data = await res.json()
+      const data = await parseJsonResponse<{ success: boolean; error?: string }>(res, 'Failed to add note')
       if (data.success) {
         setText('')
         setAttachment(null)
@@ -83,8 +83,8 @@ export function InternalNotesCard({ order, onUpdated, title = 'Internal Notes', 
       } else {
         setError(data.error || 'Failed to add note')
       }
-    } catch {
-      setError('Network error')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add note')
     } finally {
       setSaving(false)
     }

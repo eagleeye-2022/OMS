@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { FileText, ExternalLink, Plus, Upload, Loader2, Cloud, FileSpreadsheet } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload, parseJsonResponse } from '@/lib/upload'
 import type { IOrder, IClient } from '@/types'
 
 interface AssetsDocumentsCardProps {
@@ -73,12 +73,17 @@ export function AssetsDocumentsCard({ order, canEdit, onUpdated, title = 'Assets
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const addAsset = async (payload: { label: string; url: string; kind: 'drive_link' | 'file'; mimeType?: string; size?: number }) => {
-    const res = await fetch(`/api/orders/${order._id}/assets`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const data = await res.json()
+    let res: Response
+    try {
+      res = await fetch(`/api/orders/${order._id}/assets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    } catch {
+      throw new Error('Network error — check your internet connection and try again')
+    }
+    const data = await parseJsonResponse<{ success: boolean; data?: unknown; error?: string }>(res, 'Failed to add asset')
     if (!data.success) throw new Error(data.error || 'Failed to add asset')
   }
 

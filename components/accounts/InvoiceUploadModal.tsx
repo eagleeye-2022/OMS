@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { cn, formatCurrency, formatFileSize } from '@/lib/utils'
-import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload } from '@/lib/upload'
+import { ALLOWED_UPLOAD_ACCEPT, validateUploadFile, performUpload, parseJsonResponse } from '@/lib/upload'
 import { totalGst } from './types'
 import type { IClient, IOrder } from '@/types'
 
@@ -149,7 +149,7 @@ export function InvoiceUploadModal({ order, onClose, onSaved }: InvoiceUploadMod
           ...(fileMeta ? { fileUrl: fileMeta.url, fileName: fileMeta.originalName, fileSize: fileMeta.size } : {}),
         }),
       })
-      const data = await res.json()
+      const data = await parseJsonResponse<{ success: boolean; error?: string }>(res, 'Failed to save invoice')
       if (data.success) {
         setResult({ invoiceNumber, clientName: client?.companyName || '' })
       } else {

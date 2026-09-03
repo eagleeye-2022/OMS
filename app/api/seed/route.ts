@@ -61,19 +61,19 @@ export async function POST() {
       pincode: string
       gstin?: string
     }> = [
-      { companyName: 'Astra Media Pvt Ltd', contactPersonName: 'Ankit Singh', email: 'astra@example.com', phone: '9811223344', city: 'Mumbai', state: 'Maharashtra', pincode: '400001', gstin: '27AABCS1429B1Z5' },
-      { companyName: 'Lumina Kiosk Solutions', contactPersonName: 'Rakesh Nair', email: 'lumina@example.com', phone: '9822334455', city: 'Bengaluru', state: 'Karnataka', pincode: '560001' },
-      { companyName: 'Omni Corporation Ltd', contactPersonName: 'Deepa Menon', email: 'omni@example.com', phone: '9833445566', city: 'Chennai', state: 'Tamil Nadu', pincode: '600002', gstin: '33AABCO1234B1Z9' },
-      { companyName: 'Zenith Nord Industries', contactPersonName: 'Vikram Bose', email: 'zenith@example.com', phone: '9844556677', city: 'Kolkata', state: 'West Bengal', pincode: '700016' },
-      { companyName: 'Peak Tech Solutions', contactPersonName: 'Anil Kumar', email: 'peaktech@example.com', phone: '9855667788', city: 'Gurugram', state: 'Haryana', pincode: '122002', gstin: '06AABCP5678B1Z2' },
-      { companyName: 'Sky Ventures Pvt Ltd', contactPersonName: 'Pooja Tiwari', email: 'sky@example.com', phone: '9866778899', city: 'Jaipur', state: 'Rajasthan', pincode: '302006' },
-      { companyName: 'Nebula Corp Media', contactPersonName: 'Suresh Iyer', email: 'nebula@example.com', phone: '9877889900', city: 'Kolkata', state: 'West Bengal', pincode: '700091' },
-      { companyName: 'Apex Arts Studio', contactPersonName: 'Meena Krishnan', email: 'apex@example.com', phone: '9888990011', city: 'Hyderabad', state: 'Telangana', pincode: '500033' },
-      { companyName: 'BluePeak Enterprises', contactPersonName: 'Harish Reddy', email: 'bluepeak@example.com', phone: '9899001122', city: 'New Delhi', state: 'Delhi', pincode: '110001', gstin: '07AABBP8765B1Z8' },
-      { companyName: 'Zyphor Displays', contactPersonName: 'Kavita Shah', email: 'zyphor@example.com', phone: '9810112233', city: 'Pune', state: 'Maharashtra', pincode: '411001' },
-      { companyName: 'Metra Outdoor Pvt Ltd', contactPersonName: 'Dinesh Pillai', email: 'metra@example.com', phone: '9821223344', city: 'Kochi', state: 'Kerala', pincode: '682016' },
-      { companyName: 'Midnight Studio Design', contactPersonName: 'Ritu Batra', email: 'midnight@example.com', phone: '9832334455', city: 'Chandigarh', state: 'Punjab', pincode: '160009' },
-    ]
+        { companyName: 'Astra Media Pvt Ltd', contactPersonName: 'Ankit Singh', email: 'astra@example.com', phone: '9811223344', city: 'Mumbai', state: 'Maharashtra', pincode: '400001', gstin: '27AABCS1429B1Z5' },
+        { companyName: 'Lumina Kiosk Solutions', contactPersonName: 'Rakesh Nair', email: 'lumina@example.com', phone: '9822334455', city: 'Bengaluru', state: 'Karnataka', pincode: '560001' },
+        { companyName: 'Omni Corporation Ltd', contactPersonName: 'Deepa Menon', email: 'omni@example.com', phone: '9833445566', city: 'Chennai', state: 'Tamil Nadu', pincode: '600002', gstin: '33AABCO1234B1Z9' },
+        { companyName: 'Zenith Nord Industries', contactPersonName: 'Vikram Bose', email: 'zenith@example.com', phone: '9844556677', city: 'Kolkata', state: 'West Bengal', pincode: '700016' },
+        { companyName: 'Peak Tech Solutions', contactPersonName: 'Anil Kumar', email: 'peaktech@example.com', phone: '9855667788', city: 'Gurugram', state: 'Haryana', pincode: '122002', gstin: '06AABCP5678B1Z2' },
+        { companyName: 'Sky Ventures Pvt Ltd', contactPersonName: 'Pooja Tiwari', email: 'sky@example.com', phone: '9866778899', city: 'Jaipur', state: 'Rajasthan', pincode: '302006' },
+        { companyName: 'Nebula Corp Media', contactPersonName: 'Suresh Iyer', email: 'nebula@example.com', phone: '9877889900', city: 'Kolkata', state: 'West Bengal', pincode: '700091' },
+        { companyName: 'Apex Arts Studio', contactPersonName: 'Meena Krishnan', email: 'apex@example.com', phone: '9888990011', city: 'Hyderabad', state: 'Telangana', pincode: '500033' },
+        { companyName: 'BluePeak Enterprises', contactPersonName: 'Harish Reddy', email: 'bluepeak@example.com', phone: '9899001122', city: 'New Delhi', state: 'Delhi', pincode: '110001', gstin: '07AABBP8765B1Z8' },
+        { companyName: 'Zyphor Displays', contactPersonName: 'Kavita Shah', email: 'zyphor@example.com', phone: '9810112233', city: 'Pune', state: 'Maharashtra', pincode: '411001' },
+        { companyName: 'Metra Outdoor Pvt Ltd', contactPersonName: 'Dinesh Pillai', email: 'metra@example.com', phone: '9821223344', city: 'Kochi', state: 'Kerala', pincode: '682016' },
+        { companyName: 'Midnight Studio Design', contactPersonName: 'Ritu Batra', email: 'midnight@example.com', phone: '9832334455', city: 'Chandigarh', state: 'Punjab', pincode: '160009' },
+      ]
 
     const clients = await Client.create(
       rawClients.map((c, i) => ({
