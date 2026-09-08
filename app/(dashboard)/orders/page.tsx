@@ -9,6 +9,7 @@ import { OrderListPanel } from '@/components/orders/OrderListPanel'
 import { OrderDetailPanel } from '@/components/orders/OrderDetailPanel'
 import { CreateOrderModal } from '@/components/orders/CreateOrderModal'
 import { useAuth } from '@/hooks/useAuth'
+import { parseJsonResponse } from '@/lib/upload'
 import type { IActivityLog, IOrder } from '@/types'
 
 export default function OrdersPage() {
@@ -53,12 +54,14 @@ export default function OrdersPage() {
       // all correct — this was a visibility ceiling, not a data bug).
       const params = new URLSearchParams({ search: q, stage: st, limit: '200' })
       const res = await fetch(`/api/orders?${params}`)
-      const data = await res.json()
+      const data = await parseJsonResponse<{ success: boolean; data: IOrder[]; total: number }>(res, 'Failed to load orders')
       if (latestListKeyRef.current !== key) return // a newer search/filter superseded this one
       if (data.success) {
         setOrders(data.data)
         setTotal(data.total)
       }
+    } catch (err) {
+      console.error('[OrdersPage] loadList failed:', err)
     } finally {
       if (!silent && latestListKeyRef.current === key) setListLoading(false)
     }
@@ -69,12 +72,14 @@ export default function OrdersPage() {
     setDetailLoading(true)
     try {
       const res = await fetch(`/api/orders/${id}`)
-      const data = await res.json()
+      const data = await parseJsonResponse<{ success: boolean; data: { order: IOrder; logs: IActivityLog[] } }>(res, 'Failed to load order details')
       if (latestOrderIdRef.current !== id) return // a newer selection superseded this one
       if (data.success) {
         setSelectedOrder(data.data.order)
         setLogs(data.data.logs)
       }
+    } catch (err) {
+      console.error('[OrdersPage] loadDetail failed:', err)
     } finally {
       if (latestOrderIdRef.current === id) setDetailLoading(false)
     }

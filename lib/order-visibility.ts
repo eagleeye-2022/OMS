@@ -202,9 +202,13 @@ export function canViewOrderDetail(
     const id = assigneeIdString(order.assignedTeam?.creativeExecutive)
     return id === undefined || id === session.id
   }
+  // Production has no assignment/claim gate: any operations user may open any
+  // order once it's shipping-relevant OR already visible in the Production
+  // queue (relevantTo=production's status set) — see applyOwnQueueVisibility's
+  // production call in app/api/orders/route.ts, which likewise no longer
+  // restricts the list to "my assigned tasks only".
   if (session.role === 'operations') {
-    if (order.status && SHIPPING_RELEVANT_STATUSES.includes(order.status)) return true
-    return assigneeIdString(order.assignedTeam?.productionManager) !== undefined
+    return true
   }
   return true
 }

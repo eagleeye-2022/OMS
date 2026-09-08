@@ -14,7 +14,7 @@ import { OrderSummarySentence } from '@/components/orders/OrderSummarySentence'
 import { OrderClientInfoCard } from '@/components/orders/OrderClientInfoCard'
 import { OrderSpecsCard } from '@/components/orders/OrderSpecsCard'
 import { OrderTimelineCard } from '@/components/orders/OrderTimelineCard'
-import type { IActivityLog, IOrder, IUser, OrderStatus } from '@/types'
+import type { IActivityLog, IOrder, OrderStatus } from '@/types'
 
 interface ProductionDetailPageProps {
   order: IOrder | null
@@ -49,16 +49,11 @@ export function ProductionDetailPage({ order, logs, loading, isAdmin, canEditSta
   const blockReason = getProductionBlockReason(order.status as OrderStatus)
   const productionBlocked = !isAdmin && blockReason !== null
 
-  // A non-admin production user may only edit stage progress on an order
-  // assigned to *them* — "All" view intentionally lets them see a teammate's
-  // assigned order (read-only, for coordination), and this detail page is
-  // also reachable by direct id/URL, so this mirrors the ownership check the
-  // API now enforces (isOrderAssignedToSelf) rather than trusting the
-  // role-only `canEditStages` flag alone.
-  const assignee = order.assignedTeam?.productionManager as IUser | string | undefined
-  const assigneeId = assignee ? (typeof assignee === 'string' ? assignee : assignee._id) : ''
-  const isOwnOrder = isAdmin || assigneeId === currentUserId
-  const effectiveCanEditStages = canEditStages && isOwnOrder
+  // Production has no assignment/claim requirement — any operations user may
+  // edit stage progress on any order once its design is approved, mirroring
+  // the API (app/api/orders/[id]/route.ts, production-complete/route.ts),
+  // which no longer gates writes on assignedTeam.productionManager.
+  const effectiveCanEditStages = canEditStages
 
   return (
     <div className="space-y-5">

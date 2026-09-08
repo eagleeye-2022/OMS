@@ -22,7 +22,7 @@ export async function getNextOrderNumber(): Promise<string> {
     const match = lastOrder.orderNumber.match(/\d+/)
     if (match) nextNum = parseInt(match[0]) + 1
   }
-  return `ORD-${nextNum}`
+  return `ORD-${String(nextNum).padStart(2, '0')}`
 }
 
 /** Derives balanceDue/paymentStatus from totalAmount/advancePaid — the same rule everywhere an order's money fields are set at creation time. */

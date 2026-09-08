@@ -54,6 +54,33 @@ export interface UploadResult {
 }
 
 /**
+ * Safely parses JSON from a fetch Response. If the response body is HTML
+ * (e.g. a 413, 401, 403, 404, or 500 page from Next.js, Vercel, or proxy),
+ * res.json() will throw a SyntaxError. This helper catches that SyntaxError and
+ * converts it into a clear, user-friendly Error message instead of unhandled
+ * "Unexpected token '<', '<!DOCTYPE '... is not valid JSON".
+ */
+export async function parseJsonResponse<T = unknown>(
+  res: Response,
+  fallbackMessage = 'Unexpected server response'
+): Promise<T> {
+  try {
+    return (await res.json()) as T
+  } catch {
+    if (res.status === 413) {
+      throw new Error(`File is too large for the server to accept (max ${MAX_UPLOAD_FILE_SIZE_LABEL})`)
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('Your session has expired — please log in again')
+    }
+    if (res.status === 404) {
+      throw new Error('Requested item or endpoint was not found')
+    }
+    throw new Error(`${fallbackMessage} (status ${res.status})`)
+  }
+}
+
+/**
  * Shared client-side call to POST /api/upload, used by every upload UI
  * (client asset fields, order Assets & Documents card).
  *
@@ -74,18 +101,10 @@ export async function performUpload(formData: FormData): Promise<UploadResult> {
     throw new Error('Network error — check your internet connection and try again')
   }
 
-  let payload: { success: boolean; data?: UploadResult; error?: string }
-  try {
-    payload = await res.json()
-  } catch {
-    if (res.status === 413) {
-      throw new Error(`File is too large for the server to accept (max ${MAX_UPLOAD_FILE_SIZE_LABEL})`)
-    }
-    if (res.status === 401 || res.status === 403) {
-      throw new Error('Your session has expired — please log in again')
-    }
-    throw new Error(`Upload failed — the server returned an unexpected response (status ${res.status})`)
-  }
+  const payload = await parseJsonResponse<{ success: boolean; data?: UploadResult; error?: string }>(
+    res,
+    'Upload failed'
+  )
 
   if (!payload.success || !payload.data) {
     throw new Error(payload.error || 'Upload failed')

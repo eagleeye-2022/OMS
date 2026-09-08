@@ -9,6 +9,7 @@ import { Input, Select, Textarea } from '@/components/ui/Input'
 import { CurrencyField } from '@/components/ui/CurrencyField'
 import { ClientWizard } from '@/components/clients/ClientWizard'
 import { PRODUCT_CATEGORIES, PRIORITY_LABEL } from '@/lib/constants'
+import { parseJsonResponse } from '@/lib/upload'
 import { orderSchema, updateOrderCoreSchema } from '@/validations/order.schema'
 import { emptyOrderFormValues, mapOrderToFormValues, buildCreateOrderPayload, buildEditOrderPayload, type OrderFormValues } from './types'
 import type { IClient, IOrder } from '@/types'
@@ -34,13 +35,17 @@ export function CreateOrderModal({ open, initialOrder, onClose, onSaved }: Creat
   })
 
   const loadClients = useCallback(async (selectClientId?: string) => {
-    const res = await fetch('/api/clients?limit=200&status=active')
-    const data = await res.json()
-    if (data.success) {
-      setClients(data.data)
-      if (selectClientId) {
-        reset({ ...getValues(), client: selectClientId })
+    try {
+      const res = await fetch('/api/clients?limit=200&status=active')
+      const data = await parseJsonResponse<{ success: boolean; data: IClient[] }>(res, 'Failed to load clients')
+      if (data.success) {
+        setClients(data.data)
+        if (selectClientId) {
+          reset({ ...getValues(), client: selectClientId })
+        }
       }
+    } catch (err) {
+      console.error('[CreateOrderModal] loadClients failed:', err)
     }
   }, [reset, getValues])
 
@@ -84,7 +89,7 @@ export function CreateOrderModal({ open, initialOrder, onClose, onSaved }: Creat
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(parsed.data),
         })
-        const data = await res.json()
+        const data = await parseJsonResponse<{ success: boolean; error?: string }>(res, 'Failed to update order')
         if (!data.success) throw new Error(data.error || 'Failed to update order')
         onSaved()
         onClose()
@@ -105,7 +110,7 @@ export function CreateOrderModal({ open, initialOrder, onClose, onSaved }: Creat
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(parsed.data),
         })
-        const data = await res.json()
+        const data = await parseJsonResponse<{ success: boolean; error?: string }>(res, 'Failed to create order')
         if (!data.success) throw new Error(data.error || 'Failed to create order')
         onSaved()
         onClose()

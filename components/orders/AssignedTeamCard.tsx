@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Pencil, Check, X } from 'lucide-react'
 import { Avatar } from '@/components/ui/Avatar'
 import { Select } from '@/components/ui/Input'
+import { parseJsonResponse } from '@/lib/upload'
 import type { IAssignedTeam, IOrder, IUser } from '@/types'
 
 const SLOTS: { key: keyof IAssignedTeam; label: string; roleFilter: string }[] = [
@@ -27,7 +28,10 @@ export function AssignedTeamCard({ order, canEdit, onUpdated }: AssignedTeamCard
 
   useEffect(() => {
     if (editing && Object.keys(options).length === 0) {
-      fetch(`/api/orders/${order._id}/assign-team`).then((r) => r.json()).then((d) => { if (d.success) setOptions(d.data.options) })
+      fetch(`/api/orders/${order._id}/assign-team`)
+        .then((r) => parseJsonResponse<{ success?: boolean; data?: { options: Record<string, IUser[]> } }>(r, 'Failed to fetch options'))
+        .then((d) => { if (d.success && d.data) setOptions(d.data.options) })
+        .catch((err) => console.error('[AssignedTeamCard] fetch options error:', err))
     }
   }, [editing, options, order._id])
 
@@ -51,11 +55,11 @@ export function AssignedTeamCard({ order, canEdit, onUpdated }: AssignedTeamCard
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       })
-      const data = await res.json()
+      const data = await parseJsonResponse<{ success: boolean; error?: string }>(res, 'Failed to save team assignment')
       if (data.success) { setEditing(false); onUpdated() }
       else setError(data.error || 'Failed to save team assignment')
-    } catch {
-      setError('Network error')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save team assignment')
     } finally {
       setSaving(false)
     }

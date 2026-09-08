@@ -601,8 +601,16 @@ export const PRIORITY_COLOR: Record<Priority, string> = {
  * source so the order list's stage tabs and the dashboard pipeline agree.
  */
 export const ORDER_STAGE_BUCKET: Partial<Record<OrderStatus, 'creative' | 'production' | 'shipping' | 'completed'>> = {
+  // 'pending' included here — no UI path ever moves an order's status to
+  // 'design_review' before Creative approves it (see the designStatus intent
+  // handler in app/api/orders/[id]/route.ts), so a freshly created order sits
+  // at status='pending' the entire time it's actually in Creative's queue.
+  // Matches the relevantTo=creative status set in app/api/orders/route.ts —
+  // without this, /orders' Creative tab showed 0 orders even while the
+  // Creative Queue board (which does include 'pending') had real work in it.
+  pending: 'creative',
   design_review: 'creative',
-  design_approved: 'creative',
+  design_approved: 'production',
   in_production: 'production',
   quality_check: 'production',
   shipping_ready: 'shipping',
@@ -612,8 +620,8 @@ export const ORDER_STAGE_BUCKET: Partial<Record<OrderStatus, 'creative' | 'produ
 }
 
 export const ORDER_STAGE_STATUSES: Record<'creative' | 'production' | 'shipping' | 'completed', OrderStatus[]> = {
-  creative: ['design_review', 'design_approved'],
-  production: ['in_production', 'quality_check'],
+  creative: ['pending', 'design_review'],
+  production: ['design_approved', 'in_production', 'quality_check'],
   shipping: ['shipping_ready', 'dispatched', 'in_transit'],
   completed: ['delivered'],
 }
