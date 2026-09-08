@@ -122,17 +122,14 @@ export async function GET(req: NextRequest) {
         unassignedViewRoles: ['creative', 'admin'],
       })
     }
-    // Production users' default queue ("My Queue") is their own assigned
-    // tasks; `view=unassigned` shows unassigned batches ready for production,
-    // and `view=all` broadens that to every production order.
-    if (relevantTo === 'production') {
-      applyOwnQueueVisibility(query, session, {
-        restrictedRoles: ['operations'],
-        assignmentField: 'assignedTeam.productionManager',
-        view,
-        unassignedViewRoles: ['operations', 'admin'],
-        allAssignedViewRoles: ['operations', 'admin'],
-      })
+    // Production has no assignment/claim requirement — every operations user
+    // sees every order in the Production queue's status set by default, same
+    // as admin (assignedToMe above still lets a user filter down to their own
+    // claimed tasks via the "My Queue" tab if they choose to). `view=unassigned`
+    // remains available as a plain filter — batches nobody has claimed yet —
+    // without gating who's allowed to see the rest of the queue.
+    if (relevantTo === 'production' && view === 'unassigned') {
+      query['assignedTeam.productionManager'] = { $exists: false }
     }
     if (search) {
       // Client is a reference, so a plain regex on Order can't reach the

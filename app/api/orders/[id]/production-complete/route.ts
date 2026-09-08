@@ -5,7 +5,7 @@ import { getSession } from '@/lib/auth'
 import Order from '@/models/Order'
 import ActivityLog from '@/models/ActivityLog'
 import { PRODUCTION_STAGE_KEYS, getProductionBlockReason } from '@/lib/constants'
-import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS, isOrderAssignedToSelf } from '@/lib/order-visibility'
+import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS } from '@/lib/order-visibility'
 import { isStageDone } from '@/lib/production-stage'
 
 // Statuses production-complete may still fire from. Excludes 'pending' and
@@ -61,9 +61,6 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
     }
 
     if (session.role === 'operations') {
-      if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
-        return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
-      }
       const blockReason = getProductionBlockReason(existing.status)
       if (blockReason) {
         return NextResponse.json({ success: false, error: blockReason }, { status: 409 })

@@ -159,7 +159,7 @@ export async function GET() {
 
     const statusMap: Record<string, string> = {
       design_review: 'creative',
-      design_approved: 'creative',
+      design_approved: 'production',
       in_production: 'production',
       quality_check: 'qc',
       shipping_ready: 'shipping',

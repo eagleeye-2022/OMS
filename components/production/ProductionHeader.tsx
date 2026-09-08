@@ -29,8 +29,7 @@ export function ProductionHeader({
   const getSubTitle = () => {
     if (!isProductionRole) return 'orders in production'
     if (productionTab === 'unassigned') return 'unassigned production orders'
-    if (productionTab === 'all') return 'total production orders'
-    return 'batches assigned to you'
+    return 'total production orders'
   }
 
   return (

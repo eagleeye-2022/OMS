@@ -185,9 +185,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         )
       }
       if (role === 'operations') {
-        if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
-          return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
-        }
         const blockReason = getProductionBlockReason(existing.status)
         if (blockReason) {
           return NextResponse.json({ success: false, error: blockReason }, { status: 409 })
@@ -240,9 +237,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         )
       }
       if (role === 'operations') {
-        if (!isOrderAssignedToSelf(existing, session, 'productionManager')) {
-          return NextResponse.json({ success: false, error: 'You are not assigned to this order' }, { status: 403 })
-        }
         const blockReason = getProductionBlockReason(existing.status)
         if (blockReason) {
           return NextResponse.json({ success: false, error: blockReason }, { status: 409 })

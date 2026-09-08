@@ -41,7 +41,6 @@ export default function ProductionPage() {
       const params = new URLSearchParams({ search: q, relevantTo: 'production', limit: '200' })
       if (mine) params.set('assignedToMe', 'true')
       if (tab === 'unassigned') params.set('view', 'unassigned')
-      else if (tab === 'all') params.set('view', 'all')
       const res = await fetch(`/api/orders?${params}`)
       const data = await res.json()
       if (latestListKeyRef.current !== key) return
