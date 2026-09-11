@@ -238,8 +238,8 @@ export const NOTIFICATION_TYPE = {
 // profile page (see app/(dashboard)/settings/), so it's appended to every
 // list below rather than gating it like the operational modules above.
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
-  admin: ['dashboard', 'clients', 'orders', 'creative-queue', 'production', 'accounts', 'shipping', 'user-roles', 'settings'],
-  sales: ['clients', 'orders', 'shipping', 'settings'],
+  admin: ['dashboard', 'leads', 'clients', 'orders', 'creative-queue', 'production', 'accounts', 'shipping', 'user-roles', 'settings'],
+  sales: ['leads', 'clients', 'orders', 'shipping', 'settings'],
   creative: ['creative-queue', 'settings'],
   operations: ['production', 'shipping', 'settings'],
   accounting: ['accounts', 'shipping', 'settings'],
@@ -625,3 +625,111 @@ export const ORDER_STAGE_STATUSES: Record<'creative' | 'production' | 'shipping'
   shipping: ['shipping_ready', 'dispatched', 'in_transit'],
   completed: ['delivered'],
 }
+
+export const LEAD_STATUS = {
+  NEW_ENQUIRIES: 'new_enquiries',
+  ATTEMPTED_TO_CONTACT: 'attempted_to_contact',
+  CONTACTED: 'contacted',
+  PROPOSAL_SENT: 'proposal_sent',
+  NEGOTIATION: 'negotiation',
+  CONVERTED: 'converted',
+  LOST: 'lost',
+  CONTACT_IN_FUTURE: 'contact_in_future',
+} as const
+
+export type LeadStatus = (typeof LEAD_STATUS)[keyof typeof LEAD_STATUS]
+
+export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
+  new_enquiries: 'New Enquires',
+  attempted_to_contact: 'Attempted to Contact',
+  contacted: 'Contacted',
+  proposal_sent: 'Proposal Sent',
+  negotiation: 'Negotiation',
+  converted: 'Converted',
+  lost: 'Lost',
+  contact_in_future: 'Contact In Future',
+}
+
+export const LEAD_STATUS_COLOR: Record<LeadStatus, string> = {
+  new_enquiries: 'bg-blue-100 text-blue-700',
+  attempted_to_contact: 'bg-amber-100 text-amber-700',
+  contacted: 'bg-indigo-100 text-indigo-700',
+  proposal_sent: 'bg-purple-100 text-purple-700',
+  negotiation: 'bg-amber-100 text-amber-800',
+  converted: 'bg-emerald-100 text-emerald-700',
+  lost: 'bg-red-100 text-red-700',
+  contact_in_future: 'bg-gray-100 text-gray-600',
+}
+
+export const LEAD_STATUS_VALUES = Object.values(LEAD_STATUS) as LeadStatus[]
+
+export const LEAD_PAYMENT_STATUS = {
+  PENDING: 'pending',
+  PARTIALLY_PAID: 'partially_paid',
+  PAID: 'paid',
+  REFUNDED: 'refunded',
+  FAILED: 'failed',
+} as const
+
+export type LeadPaymentStatus = (typeof LEAD_PAYMENT_STATUS)[keyof typeof LEAD_PAYMENT_STATUS]
+
+export const LEAD_PAYMENT_STATUS_LABEL: Record<LeadPaymentStatus, string> = {
+  pending: 'Pending',
+  partially_paid: 'Partially Paid',
+  paid: 'Paid',
+  refunded: 'Refunded',
+  failed: 'Failed',
+}
+
+export const LEAD_PAYMENT_STATUS_COLOR: Record<LeadPaymentStatus, string> = {
+  pending: 'bg-amber-100 text-amber-700',
+  partially_paid: 'bg-blue-100 text-blue-700',
+  paid: 'bg-green-100 text-green-700',
+  refunded: 'bg-purple-100 text-purple-700',
+  failed: 'bg-red-100 text-red-700',
+}
+
+export const LEAD_SOURCE = [
+  'Website',
+  'Referral',
+  'Social Media',
+  'Walk-in',
+  'Phone Inquiry',
+  'Trade Show',
+  'Other',
+]
+
+export const LEAD_ACTIVITY_TYPE = {
+  CALL: 'call',
+  EMAIL: 'email',
+  MEETING: 'meeting',
+  NOTE: 'note',
+  STATUS_CHANGE: 'status_changed',
+  FILE: 'file',
+} as const
+
+export type LeadActivityType = (typeof LEAD_ACTIVITY_TYPE)[keyof typeof LEAD_ACTIVITY_TYPE]
+
+export const LEAD_ACTIVITY_TYPE_LABEL: Record<LeadActivityType, string> = {
+  call: 'Call',
+  email: 'Email',
+  meeting: 'Meeting',
+  note: 'Notes',
+  status_changed: 'Status Changes',
+  file: 'Files',
+}
+
+export const LEAD_ACTIVITY_TYPE_COLOR: Record<LeadActivityType, string> = {
+  call: 'bg-green-500',
+  email: 'bg-blue-500',
+  meeting: 'bg-red-500',
+  note: 'bg-amber-500',
+  status_changed: 'bg-indigo-500',
+  file: 'bg-teal-500',
+}
+
+// Manually-loggable types offered in the "Add Activity" modal — status_changed
+// is system-generated only (from the status-change route), never manually chosen.
+export const LEAD_MANUAL_ACTIVITY_TYPES: LeadActivityType[] = ['call', 'email', 'meeting', 'note']
+
+export const PREFERRED_CONTACT_TIME = ['Any time', 'Morning', 'Afternoon', 'Evening']

@@ -7,6 +7,7 @@ const ALLOWED_MIME_TYPES = new Set<string>(ALLOWED_UPLOAD_MIME_TYPES)
 
 const CLIENT_UPLOAD_ROLES = ['admin', 'sales']
 const ORDER_UPLOAD_ROLES = ['admin', 'sales', 'creative', 'operations', 'accounting']
+const LEAD_UPLOAD_ROLES = ['admin', 'sales']
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9.\-_]/g, '_').slice(-100)
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
     const file = formData.get('file')
     const clientId = formData.get('clientId')
     const orderId = formData.get('orderId')
+    const leadId = formData.get('leadId')
     const field = formData.get('field')
 
     if (!(file instanceof File)) {
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'field is required' }, { status: 400 })
     }
 
-    let entityType: 'clients' | 'orders'
+    let entityType: 'clients' | 'orders' | 'leads'
     let entityId: string
     if (typeof clientId === 'string' && clientId) {
       entityType = 'clients'
@@ -44,8 +46,14 @@ export async function POST(req: NextRequest) {
       if (!ORDER_UPLOAD_ROLES.includes(session.role)) {
         return NextResponse.json({ success: false, error: 'You are not authorized to upload files for this order' }, { status: 403 })
       }
+    } else if (typeof leadId === 'string' && leadId) {
+      entityType = 'leads'
+      entityId = leadId
+      if (!LEAD_UPLOAD_ROLES.includes(session.role)) {
+        return NextResponse.json({ success: false, error: 'Only sales or admin can upload files' }, { status: 403 })
+      }
     } else {
-      return NextResponse.json({ success: false, error: 'clientId or orderId is required' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'clientId, orderId or leadId is required' }, { status: 400 })
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase()

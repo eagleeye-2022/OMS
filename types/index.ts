@@ -12,6 +12,8 @@ import type {
   PreferredPaymentMode,
   Priority,
   NoteType,
+  LeadStatus,
+  LeadPaymentStatus,
 } from '@/lib/constants'
 
 export type {
@@ -28,6 +30,8 @@ export type {
   PreferredPaymentMode,
   Priority,
   NoteType,
+  LeadStatus,
+  LeadPaymentStatus,
 }
 
 export interface IUser {
@@ -259,12 +263,62 @@ export interface IPayment {
   createdAt: string
 }
 
+export interface ILeadLink {
+  label: string
+  url: string
+}
+
+export interface ILead {
+  _id: string
+  leadCode: string
+  name: string
+  companyName?: string
+  phone: string
+  countryCode: string
+  email?: string
+  address?: string
+  source?: string
+  status: LeadStatus
+  productType: string
+  closingDate?: string
+  quantity: number
+  amount?: number
+  paymentStatus: LeadPaymentStatus
+  specialRequirements?: string
+  description?: string
+  notes?: string
+  preferredContactTime?: string
+  assignedTo?: IUser | string
+  attachments: IAssetFile[]
+  links: ILeadLink[]
+  convertedClient?: IClient | string
+  convertedOrder?: IOrder | string
+  createdBy?: IUser | string
+  updatedBy?: IUser | string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface LeadStats {
+  total: number
+  totalDelta: number | null
+  newEnquiries: number
+  newEnquiriesDelta: number | null
+  lost: number
+  lostDelta: number | null
+  converted: number
+  convertedDelta: number | null
+}
+
 export interface IActivityLog {
   _id: string
   type: string
   description: string
+  title?: string
+  activityAt?: string
   order?: IOrder | string
   client?: IClient | string
+  lead?: ILead | string
   user: IUser | string
   userName: string
   metadata?: Record<string, unknown>

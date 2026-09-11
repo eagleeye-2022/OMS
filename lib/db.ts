@@ -14,6 +14,7 @@ import mongoose from 'mongoose'
 // so registering all models here guarantees populate() always works.
 import '@/models/User'
 import '@/models/Client'
+import '@/models/Lead'
 import '@/models/Order'
 import '@/models/Payment'
 import '@/models/ActivityLog'
