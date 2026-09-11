@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, ShoppingBag, Palette, Factory,
-  Truck, Calculator, UserCog, Settings, LogOut, Package,
+  Truck, Calculator, UserCog, Settings, LogOut, Package, Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SessionUser } from '@/lib/auth'
@@ -19,6 +19,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: <LayoutDashboard size={16} />, module: 'dashboard' },
+  { label: 'Leads', href: '/leads', icon: <Target size={16} />, module: 'leads' },
   { label: 'Clients', href: '/clients', icon: <Users size={16} />, module: 'clients' },
   { label: 'Orders', href: '/orders', icon: <ShoppingBag size={16} />, module: 'orders' },
   { label: 'Creative Team', href: '/creative-queue', icon: <Palette size={16} />, module: 'creative-queue' },

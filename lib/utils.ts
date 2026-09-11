@@ -73,3 +73,13 @@ export function generateOrderNumber(seq: number): string {
 export function slugify(str: string): string {
   return str.toLowerCase().replace(/\s+/g, '-')
 }
+
+export function formatLeadCode(code?: string | null): string {
+  if (!code) return ''
+  return code.replace(/^DL-0*/, 'DL-')
+}
+
+export function formatOrderNumber(code?: string | null): string {
+  if (!code) return ''
+  return code.replace(/^ORD-0*/, 'ORD-')
+}

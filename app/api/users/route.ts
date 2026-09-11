@@ -7,10 +7,17 @@ import { userSchema } from '@/validations/user.schema'
 export async function GET() {
   try {
     const session = await getSession()
-    if (!session || session.role !== 'admin') {
-      return NextResponse.json({ success: false, error: 'Forbidden' }, { status: 403 })
+    if (!session) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
     await connectDB()
+    // Sales also needs the user list to populate the Leads "Lead Assignee"
+    // assignee dropdown — everything else about user management stays
+    // admin-only (POST/PUT/DELETE below and in [id]/route.ts are unchanged).
+    if (session.role !== 'admin') {
+      const users = await User.find({ isActive: true }).select('name email role').sort({ name: 1 }).lean()
+      return NextResponse.json({ success: true, data: users })
+    }
     const users = await User.find().sort({ createdAt: -1 }).lean()
     return NextResponse.json({ success: true, data: users })
   } catch (err) {
