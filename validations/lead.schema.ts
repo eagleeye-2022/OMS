@@ -51,6 +51,9 @@ export const leadActivitySchema = z.object({
   title: z.string().min(1, 'Title is required'),
   date: z.string().min(1, 'Date is required'),
   time: z.string().min(1, 'Time is required'),
+  // ISO timestamp computed client-side from the local date+time, so the
+  // server doesn't have to reinterpret date/time strings in its own timezone.
+  activityAt: z.string().min(1, 'Timestamp is required'),
   description: z.string().optional().or(z.literal('')),
 })
 

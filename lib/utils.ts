@@ -76,7 +76,7 @@ export function slugify(str: string): string {
 
 export function formatLeadCode(code?: string | null): string {
   if (!code) return ''
-  return code.replace(/^DL-0*/, 'DL-')
+  return code.replace(/^LD-0*/, 'LD-')
 }
 
 export function formatOrderNumber(code?: string | null): string {

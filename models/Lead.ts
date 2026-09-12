@@ -104,7 +104,7 @@ LeadSchema.index({ assignedTo: 1 })
 LeadSchema.pre('validate', async function () {
   if (this.isNew && !this.leadCode) {
     const Lead = models.Lead || model<ILeadDocument>('Lead', LeadSchema)
-    // Numeric collation ensures "DL-0010" sorts after "DL-0009" (mirrors
+    // Numeric collation ensures "LD-0010" sorts after "LD-0009" (mirrors
     // Client.clientCode's generation in models/Client.ts).
     const last = await Lead.findOne({ leadCode: { $exists: true } })
       .collation({ locale: 'en_US', numericOrdering: true })
@@ -116,7 +116,7 @@ LeadSchema.pre('validate', async function () {
       const match = last.leadCode.match(/\d+/)
       if (match) nextNum = parseInt(match[0]) + 1
     }
-    this.leadCode = `DL-${nextNum}`
+    this.leadCode = `LD-${nextNum}`
   }
 })
 

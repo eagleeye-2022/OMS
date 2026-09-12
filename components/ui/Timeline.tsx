@@ -23,7 +23,7 @@ export function Timeline({ items }: TimelineProps) {
       {items.map((item, i) => (
         <div key={i} className="flex gap-4 pb-6 relative">
           {item.time && (
-            <div className="w-16 shrink-0 text-right text-xs font-medium text-gray-400 pt-1">
+            <div className="w-24 shrink-0 text-right text-xs font-medium text-gray-400 pt-1 leading-snug">
               {item.time}
             </div>
           )}

@@ -28,7 +28,10 @@ export async function getNextOrderNumber(): Promise<string> {
 /** Derives balanceDue/paymentStatus from totalAmount/advancePaid — the same rule everywhere an order's money fields are set at creation time. */
 export function computeOrderMoney(totalAmount: number, advancePaid: number): { balanceDue: number; paymentStatus: PaymentStatus } {
   const balanceDue = totalAmount - advancePaid
-  const paymentStatus: PaymentStatus = advancePaid >= totalAmount ? 'paid' : advancePaid > 0 ? 'partial' : 'pending'
+  // totalAmount > 0 guards against a zero-amount order (e.g. converted from
+  // a lead with no amount entered) being mislabeled "Fully Paid" just
+  // because 0 >= 0 — there's nothing paid, so it should read as pending.
+  const paymentStatus: PaymentStatus = totalAmount > 0 && advancePaid >= totalAmount ? 'paid' : advancePaid > 0 ? 'partial' : 'pending'
   return { balanceDue, paymentStatus }
 }
 

@@ -35,6 +35,17 @@ export async function convertLeadToClientOrder(
   const advancePaid = lead.paymentStatus === 'paid' ? totalAmount : 0
   const { balanceDue, paymentStatus } = computeOrderMoney(totalAmount, advancePaid)
 
+  const assets = (lead.attachments || []).map((file) => ({
+    label: file.originalName,
+    url: file.url,
+    kind: 'file' as const,
+    mimeType: file.mimeType,
+    size: file.size,
+    addedBy: actor.id,
+    addedByName: actor.name,
+    addedAt: file.uploadedAt || new Date(),
+  }))
+
   const order = await Order.create({
     orderNumber,
     client: client._id,
@@ -48,6 +59,7 @@ export async function convertLeadToClientOrder(
     paymentStatus,
     status: 'pending',
     designStatus: 'pending',
+    assets,
     createdBy: actor.id,
   })
 

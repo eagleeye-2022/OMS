@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const { id } = await params
     await connectDB()
-    const logs = await ActivityLog.find({ lead: id }).sort({ createdAt: -1 }).populate('user', 'name').lean()
+    const logs = await ActivityLog.find({ lead: id }).sort({ activityAt: -1, createdAt: -1 }).populate('user', 'name').lean()
     return NextResponse.json({ success: true, data: logs })
   } catch (err) {
     console.error(err)
@@ -44,11 +44,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const lead = await Lead.findById(id).select('_id')
     if (!lead) return NextResponse.json({ success: false, error: 'Lead not found' }, { status: 404 })
 
-    const { type, title, date, time, description } = parsed.data
-    let isoTime = (time || '').trim()
-    if (isoTime.length === 4) isoTime = `0${isoTime}`
-    if (isoTime.length === 5) isoTime = `${isoTime}:00`
-    const activityAt = new Date(`${date}T${isoTime}`)
+    const { type, title, activityAt: activityAtStr, description } = parsed.data
+    const activityAt = new Date(activityAtStr)
     if (Number.isNaN(activityAt.getTime())) {
       return NextResponse.json({ success: false, error: 'Invalid date/time format' }, { status: 400 })
     }
