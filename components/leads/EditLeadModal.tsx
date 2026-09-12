@@ -260,7 +260,7 @@ export function EditLeadModal({ open, onClose, onSaved, lead, initialSection = '
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
-                  label="Lead Name *"
+                  label="Client Name *"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Mohit Thakre"
@@ -387,7 +387,7 @@ export function EditLeadModal({ open, onClose, onSaved, lead, initialSection = '
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
-              placeholder="Add comprehensive description about this deal..."
+              placeholder="Add comprehensive description about this lead..."
             />
             <Textarea
               label="Notes"

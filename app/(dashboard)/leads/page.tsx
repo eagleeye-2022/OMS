@@ -77,7 +77,7 @@ export default function LeadsPage() {
   const columns = [
     {
       key: 'leadCode',
-      header: 'Deal #',
+      header: 'Lead #',
       render: (row) => (
         <span className="text-xs font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
           {formatLeadCode(row.leadCode)}

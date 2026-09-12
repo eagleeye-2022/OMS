@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Phone, Mail, Calendar as CalendarIcon, StickyNote, ArrowLeftRight, Paperclip } from 'lucide-react'
 import { Modal } from '@/components/ui/Modal'
 import { Input, Select, Textarea } from '@/components/ui/Input'
+import { TimePicker } from '@/components/ui/TimePicker'
 import { Button } from '@/components/ui/Button'
 import { LEAD_MANUAL_ACTIVITY_TYPES, LEAD_ACTIVITY_TYPE_LABEL, type LeadActivityType } from '@/lib/constants'
 
@@ -24,7 +25,14 @@ const ACTIVITY_ICONS: Record<LeadActivityType, React.ReactNode> = {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function toActivityAt(date: string, time: string): string {
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  return new Date(year, (month || 1) - 1, day, hour || 0, minute || 0).toISOString()
 }
 
 function nowTimeStr() {
@@ -52,7 +60,7 @@ export function AddActivityModal({ open, onClose, onSaved, leadId }: AddActivity
       const res = await fetch(`/api/leads/${leadId}/activity`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, title, date, time, description }),
+        body: JSON.stringify({ type, title, date, time, activityAt: toActivityAt(date, time), description }),
       })
       const data = await res.json()
       if (!data.success) {
@@ -78,7 +86,7 @@ export function AddActivityModal({ open, onClose, onSaved, leadId }: AddActivity
   return (
     <Modal open={open} onClose={onClose} title="Add Activity" size="lg">
       <form onSubmit={handleSubmit}>
-        <p className="text-sm text-gray-500 -mt-2 mb-4">Log a new activity related to this deal.</p>
+        <p className="text-sm text-gray-500 -mt-2 mb-4">Log a new activity related to this lead.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select
             label="Activity Type *"
@@ -88,7 +96,7 @@ export function AddActivityModal({ open, onClose, onSaved, leadId }: AddActivity
           />
           <Input label="Title *" value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} placeholder="e.g. Call with Arjun Reddy" />
           <Input label="Date *" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <Input label="Time *" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <TimePicker label="Time *" value={time} onChange={setTime} />
           <div className="sm:col-span-2">
             <Textarea label="Description" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Add details about this activity..." />
           </div>

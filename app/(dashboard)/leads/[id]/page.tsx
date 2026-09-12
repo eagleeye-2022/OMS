@@ -154,13 +154,13 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             <Avatar name={lead.companyName || lead.name} size="lg" />
             <div>
               <p className="text-xs text-gray-500 bg-gray-100 inline-block px-2.5 py-0.5 rounded-md font-medium mb-1.5">
-                Deal #{formatLeadCode(lead.leadCode)}
+                Lead #{formatLeadCode(lead.leadCode)}
               </p>
               <h1 className="text-lg font-bold text-gray-900">
                 {lead.companyName ? `${lead.companyName} — ${lead.productType}` : lead.name}
               </h1>
               <p className="text-xs text-gray-500 mt-0.5">
-                Lead: <span className="font-medium text-gray-700">{lead.name}</span> · Created on {formatDate(lead.createdAt)}
+                Client: <span className="font-medium text-gray-700">{lead.name}</span> · Created on {formatDate(lead.createdAt)}
               </p>
             </div>
           </div>
@@ -258,7 +258,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                 </Button>
               </div>
               <dl className="space-y-2.5 text-sm">
-                <Row label="Lead Name" value={lead.name} />
+                <Row label="Client Name" value={lead.name} />
                 <Row label="Company" value={lead.companyName || '—'} />
                 <Row label="Phone" value={`${lead.countryCode} ${lead.phone}`} />
                 <Row label="Email" value={lead.email || '—'} />
@@ -374,7 +374,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
               </div>
               <div>
                 <h2 className="text-base font-bold text-gray-900">Timeline</h2>
-                <p className="text-xs text-gray-500">Track all key activities and updates related to this deal.</p>
+                <p className="text-xs text-gray-500">Track all key activities and updates related to this lead.</p>
               </div>
             </div>
             <Button
@@ -410,11 +410,12 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
                     <Timeline
                       items={group.items.map((log) => {
                         const userName = (typeof log.user === 'object' && log.user && 'name' in log.user ? (log.user as { name: string }).name : log.userName) || 'User'
-                        const formattedTime = new Date(log.activityAt || log.createdAt).toLocaleTimeString('en-US', {
+                        const logDate = new Date(log.activityAt || log.createdAt)
+                        const formattedTime = `${formatDate(logDate)}, ${logDate.toLocaleTimeString('en-US', {
                           hour: '2-digit',
                           minute: '2-digit',
                           hour12: true,
-                        })
+                        })}`
 
                         let badge: React.ReactNode = null
                         if (log.type === 'status_changed') {

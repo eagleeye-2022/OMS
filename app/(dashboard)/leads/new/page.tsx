@@ -149,7 +149,7 @@ export default function CreateLeadPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Lead Name *" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Enter lead name" />
+          <Input label="Client Name *" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Enter client name" />
           <Select label="Lead Source" value={form.source} onChange={(e) => set('source', e.target.value)} options={[{ value: '', label: 'Select lead source' }, ...LEAD_SOURCE.map((s) => ({ value: s, label: s }))]} />
           <Input label="Company Name" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} placeholder="Enter company name" />
           <Select label="Lead Status *" value={form.status} onChange={(e) => set('status', e.target.value)} options={LEAD_STATUS_VALUES.map((s) => ({ value: s, label: LEAD_STATUS_LABEL[s] }))} />

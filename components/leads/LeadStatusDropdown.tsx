@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { LEAD_STATUS_VALUES, LEAD_STATUS_LABEL, LEAD_STATUS_COLOR, type LeadStatus } from '@/lib/constants'
+import { LEAD_STATUS_VALUES, LEAD_STATUS_LABEL, LEAD_STATUS_COLOR, LEAD_STATUS_DOT_COLOR, type LeadStatus } from '@/lib/constants'
 
 interface LeadStatusDropdownProps {
   status: LeadStatus
@@ -49,7 +49,7 @@ export function LeadStatusDropdown({ status, onChange, disabled }: LeadStatusDro
                 s === status && 'font-semibold'
               )}
             >
-              <span className={cn('w-2 h-2 rounded-full', LEAD_STATUS_COLOR[s].split(' ')[0].replace('100', '500'))} />
+              <span className={cn('w-2 h-2 rounded-full', LEAD_STATUS_DOT_COLOR[s])} />
               {LEAD_STATUS_LABEL[s]}
             </button>
           ))}

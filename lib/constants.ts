@@ -656,9 +656,24 @@ export const LEAD_STATUS_COLOR: Record<LeadStatus, string> = {
   contacted: 'bg-indigo-100 text-indigo-700',
   proposal_sent: 'bg-purple-100 text-purple-700',
   negotiation: 'bg-amber-100 text-amber-800',
-  converted: 'bg-emerald-100 text-emerald-700',
+  converted: 'bg-green-100 text-green-700',
   lost: 'bg-red-100 text-red-700',
   contact_in_future: 'bg-gray-100 text-gray-600',
+}
+
+// Literal (non-computed) dot-color classes: Tailwind's JIT scanner can only
+// pick up class names it can see as literal text, so these must NOT be built
+// at runtime (e.g. via `.replace('100', '500')`) or the "-500" utilities
+// never get generated and the dot silently renders with no background.
+export const LEAD_STATUS_DOT_COLOR: Record<LeadStatus, string> = {
+  new_enquiries: 'bg-blue-500',
+  attempted_to_contact: 'bg-amber-500',
+  contacted: 'bg-indigo-500',
+  proposal_sent: 'bg-purple-500',
+  negotiation: 'bg-amber-500',
+  converted: 'bg-green-500',
+  lost: 'bg-red-500',
+  contact_in_future: 'bg-gray-500',
 }
 
 export const LEAD_STATUS_VALUES = Object.values(LEAD_STATUS) as LeadStatus[]
