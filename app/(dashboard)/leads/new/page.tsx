@@ -15,14 +15,11 @@ import {
 } from '@/lib/constants'
 import type { IUser, IAssetFile, ILeadLink } from '@/types'
 
-const COUNTRY_CODES = ['+91', '+1', '+44', '+61', '+971']
-
 interface FormState {
   name: string
   source: string
   companyName: string
   status: string
-  countryCode: string
   phone: string
   email: string
   address: string
@@ -40,7 +37,7 @@ interface FormState {
 
 const INITIAL: FormState = {
   name: '', source: '', companyName: '', status: 'new_enquiries',
-  countryCode: '+91', phone: '', email: '', address: '',
+  phone: '', email: '', address: '',
   productType: '', closingDate: '', quantity: '', paymentStatus: 'pending', amount: '',
   specialRequirements: '', description: '', notes: '', preferredContactTime: '',
   assignedTo: '',
@@ -156,10 +153,7 @@ export default function CreateLeadPage() {
           <Select label="Lead Source" value={form.source} onChange={(e) => set('source', e.target.value)} options={[{ value: '', label: 'Select lead source' }, ...LEAD_SOURCE.map((s) => ({ value: s, label: s }))]} />
           <Input label="Company Name" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} placeholder="Enter company name" />
           <Select label="Lead Status *" value={form.status} onChange={(e) => set('status', e.target.value)} options={LEAD_STATUS_VALUES.map((s) => ({ value: s, label: LEAD_STATUS_LABEL[s] }))} />
-          <div className="flex gap-2">
-            <Select className="w-24" value={form.countryCode} onChange={(e) => set('countryCode', e.target.value)} options={COUNTRY_CODES.map((c) => ({ value: c, label: c }))} />
-            <Input className="flex-1" label="Phone Number *" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="Enter phone number" />
-          </div>
+          <Input label="Phone Number *" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="Enter phone number" />
           <Input label="Email Address" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="Enter email address" />
           <Input label="Address" value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Enter address" />
         </div>
