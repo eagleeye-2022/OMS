@@ -13,7 +13,7 @@ import {
   LEAD_PAYMENT_STATUS, LEAD_PAYMENT_STATUS_LABEL,
   PREFERRED_CONTACT_TIME, PRODUCT_CATEGORIES,
 } from '@/lib/constants'
-import type { IUser, IAssetFile, ILeadLink } from '@/types'
+import type { IUser, IAssetFile, ILeadLink, IClient } from '@/types'
 
 interface FormState {
   name: string
@@ -55,9 +55,51 @@ export default function CreateLeadPage() {
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [clientSuggestions, setClientSuggestions] = useState<IClient[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [selectedClientId, setSelectedClientId] = useState('')
+  const nameFieldRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     fetch('/api/users').then((r) => r.json()).then((d) => { if (d.success) setUsers(d.data) }).catch(() => {})
   }, [])
+
+  // Look up existing clients as the name is typed, so picking one auto-fills
+  // the rest of the form instead of re-entering details already on file.
+  useEffect(() => {
+    const query = form.name.trim()
+    if (query.length < 2) { setClientSuggestions([]); return }
+    const timer = setTimeout(() => {
+      fetch(`/api/clients?search=${encodeURIComponent(query)}&limit=5`)
+        .then((r) => r.json())
+        .then((d) => { if (d.success) setClientSuggestions(d.data) })
+        .catch(() => {})
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [form.name])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (nameFieldRef.current && !nameFieldRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const applyClient = (client: IClient) => {
+    setForm((f) => ({
+      ...f,
+      name: client.contactPersonName || client.companyName,
+      companyName: client.companyName,
+      phone: client.phone || f.phone,
+      email: client.email || f.email,
+      address: client.billingAddress?.landmark || f.address,
+    }))
+    setSelectedClientId(client._id)
+    setShowSuggestions(false)
+  }
 
   const set = (key: keyof FormState, value: string) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -114,6 +156,7 @@ export default function CreateLeadPage() {
           closingDate: form.closingDate || undefined,
           attachments,
           links,
+          existingClientId: selectedClientId || undefined,
         }),
       })
       const data = await res.json()
@@ -149,7 +192,31 @@ export default function CreateLeadPage() {
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Client Name *" value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Enter client name" />
+          <div className="relative" ref={nameFieldRef}>
+            <Input
+              label="Client Name *"
+              value={form.name}
+              onChange={(e) => { set('name', e.target.value); setSelectedClientId(''); setShowSuggestions(true) }}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder="Enter client name"
+              autoComplete="off"
+            />
+            {showSuggestions && clientSuggestions.length > 0 && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-56 overflow-auto">
+                {clientSuggestions.map((c) => (
+                  <button
+                    key={c._id}
+                    type="button"
+                    onClick={() => applyClient(c)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex flex-col"
+                  >
+                    <span className="font-medium text-gray-900">{c.contactPersonName || c.companyName}</span>
+                    <span className="text-xs text-gray-400">{c.companyName}{c.phone ? ` · ${c.phone}` : ''}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <Select label="Lead Source" value={form.source} onChange={(e) => set('source', e.target.value)} options={[{ value: '', label: 'Select lead source' }, ...LEAD_SOURCE.map((s) => ({ value: s, label: s }))]} />
           <Input label="Company Name" value={form.companyName} onChange={(e) => set('companyName', e.target.value)} placeholder="Enter company name" />
           <Select label="Lead Status *" value={form.status} onChange={(e) => set('status', e.target.value)} options={LEAD_STATUS_VALUES.map((s) => ({ value: s, label: LEAD_STATUS_LABEL[s] }))} />

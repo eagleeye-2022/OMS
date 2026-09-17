@@ -200,6 +200,7 @@ export interface IOrder {
   _id: string
   orderNumber: string
   client: IClient | string
+  fromLead?: string
   category: string
   productType: string
   quantity: number

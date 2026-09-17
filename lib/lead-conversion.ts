@@ -5,17 +5,15 @@ import type { ILeadDocument } from '@/models/Lead'
 import { getNextOrderNumber, computeOrderMoney } from './order-creation'
 
 /**
- * Fires when a lead's status is moved to 'converted' (see
- * app/api/leads/[id]/status/route.ts). Creates a real Client from the lead's
- * contact details and a real Order from its product/quantity/amount fields,
- * mirroring how lib/order-creation.ts materializes Orders from a Client's
- * product preferences. Idempotent by caller convention: the status route
- * only invokes this once, when `lead.convertedClient` isn't already set.
+ * Fires right after a lead is created (see POST /api/leads). Creates a real
+ * Client from the lead's contact details so every lead has a client record
+ * from the start, instead of waiting for conversion. Idempotent by caller
+ * convention: only invoked when `lead.convertedClient` isn't already set.
  */
-export async function convertLeadToClientOrder(
+export async function createClientFromLead(
   lead: ILeadDocument,
   actor: { id: string; name: string }
-): Promise<{ client: InstanceType<typeof Client>; order: InstanceType<typeof Order> }> {
+): Promise<InstanceType<typeof Client>> {
   const client = await Client.create({
     companyName: lead.companyName || lead.name,
     clientType: lead.companyName ? 'corporate' : 'individual',
@@ -30,6 +28,34 @@ export async function convertLeadToClientOrder(
     createdBy: actor.id,
   })
 
+  lead.convertedClient = client._id
+
+  await ActivityLog.create({
+    type: 'client_created',
+    description: `Client "${client.companyName}" auto-created from lead "${lead.name}"`,
+    lead: lead._id,
+    client: client._id,
+    user: actor.id,
+    userName: actor.name,
+  })
+
+  return client
+}
+
+/**
+ * Fires when a lead's status is moved to 'converted' (see
+ * app/api/leads/[id]/status/route.ts). Creates a real Order from the lead's
+ * product/quantity/amount fields against the Client already attached to the
+ * lead (see createClientFromLead), mirroring how lib/order-creation.ts
+ * materializes Orders from a Client's product preferences. Idempotent by
+ * caller convention: the status route only invokes this once, when
+ * `lead.convertedOrder` isn't already set.
+ */
+export async function createOrderFromLead(
+  lead: ILeadDocument,
+  clientId: InstanceType<typeof Client>['_id'],
+  actor: { id: string; name: string }
+): Promise<InstanceType<typeof Order>> {
   const orderNumber = await getNextOrderNumber()
   const totalAmount = lead.amount || 0
   const advancePaid = lead.paymentStatus === 'paid' ? totalAmount : 0
@@ -48,7 +74,8 @@ export async function convertLeadToClientOrder(
 
   const order = await Order.create({
     orderNumber,
-    client: client._id,
+    client: clientId,
+    fromLead: lead._id,
     category: lead.productType,
     productType: lead.productType,
     quantity: lead.quantity,
@@ -63,18 +90,17 @@ export async function convertLeadToClientOrder(
     createdBy: actor.id,
   })
 
-  lead.convertedClient = client._id
   lead.convertedOrder = order._id
 
   await ActivityLog.create({
     type: 'lead_converted',
-    description: `Lead converted — Client "${client.companyName}" and Order ${orderNumber} created`,
+    description: `Lead converted — Order ${orderNumber} created`,
     lead: lead._id,
-    client: client._id,
+    client: clientId,
     order: order._id,
     user: actor.id,
     userName: actor.name,
   })
 
-  return { client, order }
+  return order
 }

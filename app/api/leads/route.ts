@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Types } from 'mongoose'
 import { connectDB } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import Lead from '@/models/Lead'
+import Client from '@/models/Client'
 import ActivityLog from '@/models/ActivityLog'
 import { leadSchema } from '@/validations/lead.schema'
+import { createClientFromLead } from '@/lib/lead-conversion'
 
 const LEAD_ROLES = ['admin', 'sales']
 
@@ -104,18 +107,32 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const parsed = leadSchema.safeParse(body)
+    // Picked from the "Client Name" autocomplete when the typed name matches
+    // an existing client — links the lead to that client instead of creating
+    // a duplicate. Not part of leadSchema since it's not a Lead field.
+    const { existingClientId, ...leadBody } = body
+    const parsed = leadSchema.safeParse(leadBody)
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 })
     }
 
     await connectDB()
+
+    let linkedClient: InstanceType<typeof Client> | null = null
+    if (existingClientId && Types.ObjectId.isValid(existingClientId)) {
+      linkedClient = await Client.findById(existingClientId)
+      if (!linkedClient) {
+        return NextResponse.json({ success: false, error: 'Selected client no longer exists' }, { status: 400 })
+      }
+    }
+
     const { assignedTo, ...rest } = parsed.data
     const lead = await Lead.create({
       ...rest,
       // Empty string ("no assignee selected") must be omitted, not passed
       // through — Mongoose would try to cast '' to an ObjectId and throw.
       ...(assignedTo ? { assignedTo } : {}),
+      ...(linkedClient ? { convertedClient: linkedClient._id } : {}),
       createdBy: session.id,
     })
 
@@ -126,6 +143,20 @@ export async function POST(req: NextRequest) {
       user: session.id,
       userName: session.name,
     })
+
+    if (linkedClient) {
+      await ActivityLog.create({
+        type: 'client_created',
+        description: `Lead "${lead.name}" linked to existing client "${linkedClient.companyName}"`,
+        lead: lead._id,
+        client: linkedClient._id,
+        user: session.id,
+        userName: session.name,
+      })
+    } else {
+      await createClientFromLead(lead, { id: session.id, name: session.name })
+      await lead.save()
+    }
 
     return NextResponse.json({ success: true, data: lead }, { status: 201 })
   } catch (err) {

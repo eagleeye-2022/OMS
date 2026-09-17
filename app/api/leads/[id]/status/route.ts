@@ -5,7 +5,7 @@ import Lead from '@/models/Lead'
 import ActivityLog from '@/models/ActivityLog'
 import { leadStatusSchema } from '@/validations/lead.schema'
 import { LEAD_STATUS_LABEL, type LeadStatus } from '@/lib/constants'
-import { convertLeadToClientOrder } from '@/lib/lead-conversion'
+import { createClientFromLead, createOrderFromLead } from '@/lib/lead-conversion'
 
 const LEAD_ROLES = ['admin', 'sales']
 
@@ -33,9 +33,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     lead.status = nextStatus
     lead.set('updatedBy', session.id)
 
-    let conversion: { client: unknown; order: unknown } | null = null
-    if (nextStatus === 'converted' && !lead.convertedClient) {
-      conversion = await convertLeadToClientOrder(lead, { id: session.id, name: session.name })
+    let conversion: { order: unknown } | null = null
+    if (nextStatus === 'converted' && !lead.convertedOrder) {
+      const actor = { id: session.id, name: session.name }
+      // Older leads created before client auto-creation may not have a
+      // convertedClient yet — create one on the fly so conversion still works.
+      const clientId = lead.convertedClient || (await createClientFromLead(lead, actor))._id
+      const order = await createOrderFromLead(lead, clientId, actor)
+      conversion = { order }
     }
 
     await lead.save()
