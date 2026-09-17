@@ -281,6 +281,41 @@ export const ROLE_DEFAULT_REDIRECT: Record<Role, string> = {
   accounting: '/accounts',
 }
 
+// Email-level DOWNGRADE — the mirror image of SHIPPING_EMAIL_ALLOWLIST above.
+// These accounts keep the 'admin' DB role (so every permission check inside
+// the modules they're allowed into still passes exactly as it would for any
+// other admin — e.g. seeing every order, not just self-assigned ones), but
+// are restricted to the Sales + Creative modules only, everywhere access is
+// gated by role: the sidebar, every module's layout guard, and the
+// post-login/access-denied redirect. Matched case-insensitively.
+export const RESTRICTED_ADMIN_EMAILS: string[] = [
+  'officialbloopersstore@gmail.com',
+]
+
+export function isRestrictedAdminEmail(email?: string | null): boolean {
+  if (!email) return false
+  const normalized = email.toLowerCase()
+  return RESTRICTED_ADMIN_EMAILS.some((allowed) => allowed.toLowerCase() === normalized)
+}
+
+// The module set a restricted admin (above) is limited to — the union of
+// ROLE_PERMISSIONS.sales and ROLE_PERMISSIONS.creative, so their experience
+// matches what a real sales+creative person would see, just without needing
+// two separate accounts or a multi-role DB migration.
+export const RESTRICTED_ADMIN_MODULES: string[] = ['leads', 'clients', 'orders', 'shipping', 'creative-queue', 'settings']
+
+// Single source of truth for "where should this user land" — used both for
+// the post-login redirect and for every layout guard's access-denied
+// fallback, so a restricted admin (see isRestrictedAdminEmail) never gets
+// bounced to '/' (Dashboard, which they can't access) the way a plain
+// ROLE_DEFAULT_REDIRECT[user.role] lookup would.
+export function defaultRedirectFor(user: { role: Role; email?: string | null }): string {
+  if (user.role === 'admin' && isRestrictedAdminEmail(user.email)) {
+    return ROLE_DEFAULT_REDIRECT.sales
+  }
+  return ROLE_DEFAULT_REDIRECT[user.role]
+}
+
 export const NOTE_TYPE = {
   GENERAL: 'general',
   CREATIVE: 'creative',

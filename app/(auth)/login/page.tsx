@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AuthLayout } from '@/components/auth/AuthLayout'
 import { OtpInput } from '@/components/auth/OtpInput'
-import { ROLE_DEFAULT_REDIRECT, ROLE_LABEL, type Role } from '@/lib/constants'
+import { ROLE_LABEL, defaultRedirectFor, type Role } from '@/lib/constants'
 
 const OTP_TTL_SECONDS = 10 * 60
 const RESEND_COOLDOWN_SECONDS = 30
@@ -125,8 +125,8 @@ export default function LoginPage() {
         setError(data.error || 'Verification failed')
         return
       }
-      const role = data.data?.role as keyof typeof ROLE_DEFAULT_REDIRECT | undefined
-      router.push(role ? ROLE_DEFAULT_REDIRECT[role] : '/login')
+      const loggedInUser = data.data as { role: Role; email?: string } | undefined
+      router.push(loggedInUser ? defaultRedirectFor(loggedInUser) : '/login')
       router.refresh()
     } catch {
       setError('Network error. Please try again.')
