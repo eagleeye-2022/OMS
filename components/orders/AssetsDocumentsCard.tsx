@@ -46,7 +46,12 @@ const CLIENT_LINK_LABELS: Record<keyof IClient['sharedLinks'], string> = {
 // live on the Client record, not the Order — merge them in read-only ahead
 // of the order's own added assets so this card shows everything received
 // from the client, not just what's been attached to this specific order.
+// Skipped for orders created by converting a Lead (order.fromLead set):
+// there the client may be a pre-existing one picked from the lead-creation
+// autocomplete, and its onboarding assets belong to its other orders, not
+// this lead's own attachments — see lib/lead-conversion.ts:createOrderFromLead.
 function getClientProvidedAssets(order: IOrder): DisplayAsset[] {
+  if (order.fromLead) return []
   const client = typeof order.client === 'object' ? (order.client as IClient) : undefined
   if (!client) return []
 

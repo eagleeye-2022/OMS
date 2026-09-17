@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SessionUser } from '@/lib/auth'
-import { ROLE_PERMISSIONS, isShippingAllowedEmail } from '@/lib/constants'
+import { ROLE_PERMISSIONS, isShippingAllowedEmail, isRestrictedAdminEmail, RESTRICTED_ADMIN_MODULES } from '@/lib/constants'
 
 interface NavItem {
   label: string
@@ -40,7 +40,9 @@ interface SidebarProps {
 
 export function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname()
-  const basePermissions = ROLE_PERMISSIONS[user.role] || []
+  const basePermissions = user.role === 'admin' && isRestrictedAdminEmail(user.email)
+    ? RESTRICTED_ADMIN_MODULES
+    : ROLE_PERMISSIONS[user.role] || []
   // Shipping-allowlisted emails get the Shipping nav item even if their role's
   // module list doesn't include it (mirrors the route guard's email override).
   const permissions = isShippingAllowedEmail(user.email) && !basePermissions.includes('shipping')

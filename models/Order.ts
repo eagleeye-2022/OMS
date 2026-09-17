@@ -71,6 +71,16 @@ export interface IInvoice {
 export interface IOrderDocument extends Document {
   orderNumber: string
   client: Types.ObjectId
+  /**
+   * Set only when this order was materialized from a converted Lead (see
+   * lib/lead-conversion.ts:createOrderFromLead). Distinguishes it from an
+   * order created via the Client wizard/direct order-creation flow, whose
+   * assets card intentionally also shows the client's onboarding-level
+   * files (see AssetsDocumentsCard.tsx) — a lead-converted order should show
+   * only the files attached to that specific lead/order, not an existing
+   * client's unrelated onboarding assets.
+   */
+  fromLead?: Types.ObjectId
   category: string
   productType: string
   quantity: number
@@ -186,6 +196,7 @@ const OrderSchema = new Schema<IOrderDocument>(
   {
     orderNumber: { type: String, required: true, unique: true },
     client: { type: Schema.Types.ObjectId, ref: 'Client', required: true },
+    fromLead: { type: Schema.Types.ObjectId, ref: 'Lead' },
     category: { type: String, required: true },
     productType: { type: String, required: true },
     quantity: { type: Number, required: true, min: 1 },
