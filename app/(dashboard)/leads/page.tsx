@@ -102,7 +102,7 @@ export default function LeadsPage() {
     {
       key: 'assignedTo',
       header: 'Lead Assignee',
-      render: (row) => (typeof row.assignedTo === 'object' ? (row.assignedTo as IUser).name : '—'),
+      render: (row) => (row.assignedTo && typeof row.assignedTo === 'object' ? (row.assignedTo as IUser).name || '—' : '—'),
     },
   ] satisfies import('@/components/ui/DataTable').Column<ILead>[]
 
