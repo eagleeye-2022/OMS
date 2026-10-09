@@ -40,7 +40,9 @@ interface SidebarProps {
 
 export function Sidebar({ user, onLogout }: SidebarProps) {
   const pathname = usePathname()
-  const basePermissions = user.role === 'admin' && isRestrictedAdminEmail(user.email)
+  // Role-independent: in production this account is 'sales', not 'admin', and
+  // must still get the Creative Team module (see RESTRICTED_ADMIN_EMAILS).
+  const basePermissions = isRestrictedAdminEmail(user.email)
     ? RESTRICTED_ADMIN_MODULES
     : ROLE_PERMISSIONS[user.role] || []
   // Shipping-allowlisted emails get the Shipping nav item even if their role's
