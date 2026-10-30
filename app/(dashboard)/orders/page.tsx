@@ -52,7 +52,7 @@ export default function OrdersPage() {
       // the list (confirmed live: a freshly created order ranked outside the
       // old 50-item window while its DB record, client link, and status were
       // all correct — this was a visibility ceiling, not a data bug).
-      const params = new URLSearchParams({ search: q, stage: st, limit: '200' })
+      const params = new URLSearchParams({ search: q, stage: st, limit: '200', sort: 'latest' })
       const res = await fetch(`/api/orders?${params}`)
       const data = await parseJsonResponse<{ success: boolean; data: IOrder[]; total: number }>(res, 'Failed to load orders')
       if (latestListKeyRef.current !== key) return // a newer search/filter superseded this one

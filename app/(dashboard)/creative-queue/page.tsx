@@ -5,6 +5,7 @@ import { CreativeHeader } from '@/components/creative/CreativeHeader'
 import { CreativeBoard } from '@/components/creative/CreativeBoard'
 import { CreativeDetailDrawer } from '@/components/creative/CreativeDetailDrawer'
 import { useAuth } from '@/hooks/useAuth'
+import { hasFullCreativeAccess } from '@/lib/constants'
 import type { IActivityLog, IOrder } from '@/types'
 
 export default function CreativeQueuePage() {
@@ -115,7 +116,7 @@ export default function CreativeQueuePage() {
         order={selectedOrder}
         logs={logs}
         loading={detailLoading}
-        isAdmin={user?.role === 'admin'}
+        isAdmin={hasFullCreativeAccess(user)}
         currentUserId={user?.id}
         isCreativeRole={isCreativeRole}
         onClose={() => setDrawerOpen(false)}

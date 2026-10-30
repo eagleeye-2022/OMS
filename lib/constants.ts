@@ -281,13 +281,12 @@ export const ROLE_DEFAULT_REDIRECT: Record<Role, string> = {
   accounting: '/accounts',
 }
 
-// Email-level DOWNGRADE — the mirror image of SHIPPING_EMAIL_ALLOWLIST above.
-// These accounts keep the 'admin' DB role (so every permission check inside
-// the modules they're allowed into still passes exactly as it would for any
-// other admin — e.g. seeing every order, not just self-assigned ones), but
-// are restricted to the Sales + Creative modules only, everywhere access is
-// gated by role: the sidebar, every module's layout guard, and the
-// post-login/access-denied redirect. Matched case-insensitively.
+// Email-level Sales + Creative access, whatever the account's DB role ('sales'
+// in production). Limits the account to those two modules everywhere access is
+// gated by role (the sidebar, every module's layout guard, and the
+// post-login/access-denied redirect), and grants full control of the Creative
+// module on top of its role — see hasFullCreativeAccess. Matched
+// case-insensitively.
 export const RESTRICTED_ADMIN_EMAILS: string[] = [
   'officialbloopersstore@gmail.com',
 ]
@@ -296,6 +295,12 @@ export function isRestrictedAdminEmail(email?: string | null): boolean {
   if (!email) return false
   const normalized = email.toLowerCase()
   return RESTRICTED_ADMIN_EMAILS.some((allowed) => allowed.toLowerCase() === normalized)
+}
+
+// Admin-level control inside the Creative module only: edit any order's design
+// status and files without claiming it, and reassign its Creative Executive.
+export function hasFullCreativeAccess(user?: { role?: Role; email?: string | null } | null): boolean {
+  return user?.role === 'admin' || isRestrictedAdminEmail(user?.email)
 }
 
 // The module set a restricted admin (above) is limited to — the union of

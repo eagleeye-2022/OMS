@@ -5,6 +5,7 @@ import Order from '@/models/Order'
 import User from '@/models/User'
 import ActivityLog from '@/models/ActivityLog'
 import { assignTeamSchema } from '@/validations/order.schema'
+import { hasFullCreativeAccess } from '@/lib/constants'
 
 /**
  * Lightweight, purpose-built list of assignable team members per role —
@@ -16,7 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const session = await getSession()
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
-    if (session.role !== 'admin') {
+    if (!hasFullCreativeAccess(session)) {
       return NextResponse.json({ success: false, error: 'Only admin can view team assignment options' }, { status: 403 })
     }
 
@@ -44,7 +45,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       success: true,
       data: {
         current: order.assignedTeam,
-        options: { sales: salesUsers, creative: creativeUsers, production: productionUsers },
+        // Non-admins here can only reassign the Creative slot (see POST).
+        options: session.role === 'admin'
+          ? { sales: salesUsers, creative: creativeUsers, production: productionUsers }
+          : { creative: creativeUsers },
       },
     })
   } catch (err) {
@@ -86,7 +90,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const isSelfClaim = isCreativeSelfClaim || isProductionSelfClaim
 
-    if (!isPrivileged && !isSelfClaim) {
+    // Full-Creative-access emails may reassign the Creative slot only — the
+    // sales and production slots stay admin-only.
+    const isCreativeReassign =
+      hasFullCreativeAccess(session) &&
+      parsed.data.creativeExecutive !== undefined &&
+      parsed.data.salesExecutive === undefined &&
+      parsed.data.productionManager === undefined
+
+    if (!isPrivileged && !isSelfClaim && !isCreativeReassign) {
       return NextResponse.json(
         { success: false, error: 'Only admin, or a creative/production user claiming their own unassigned task, can assign the order team' },
         { status: 403 }

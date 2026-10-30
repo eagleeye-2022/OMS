@@ -30,7 +30,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ success: false, error: 'You do not have access to this order' }, { status: 403 })
     }
 
-    return NextResponse.json({ success: true, data: filterNotesForRole(order.notes, session.role) })
+    return NextResponse.json({ success: true, data: filterNotesForRole(order.notes, session.role, session.email) })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const noteType: NoteType = parsed.data.noteType || 'general'
-    if (!canWriteNoteType(session.role, noteType)) {
+    if (!canWriteNoteType(session.role, noteType, session.email)) {
       return NextResponse.json(
         { success: false, error: `Role '${session.role}' cannot post ${NOTE_TYPE_LABEL[noteType]} notes` },
         { status: 403 }
@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       userName: session.name,
     })
 
-    return NextResponse.json({ success: true, data: filterNotesForRole(order.notes, session.role) }, { status: 201 })
+    return NextResponse.json({ success: true, data: filterNotesForRole(order.notes, session.role, session.email) }, { status: 201 })
   } catch (err) {
     console.error(err)
     return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
