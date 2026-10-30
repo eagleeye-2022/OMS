@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { CreativeDetailPage } from '@/components/creative/CreativeDetailPage'
 import { useAuth } from '@/hooks/useAuth'
+import { hasFullCreativeAccess } from '@/lib/constants'
 import type { IActivityLog, IOrder } from '@/types'
 
 export default function CreativeQueueDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -43,7 +44,7 @@ export default function CreativeQueueDetailPage({ params }: { params: Promise<{ 
         order={order}
         logs={logs}
         loading={loading}
-        isAdmin={user?.role === 'admin'}
+        isAdmin={hasFullCreativeAccess(user)}
         currentUserId={user?.id}
         isCreativeRole={user?.role === 'creative'}
         onUpdated={load}

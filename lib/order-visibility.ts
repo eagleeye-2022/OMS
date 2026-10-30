@@ -1,5 +1,5 @@
 import type { SessionUser } from './auth'
-import { NOTE_TYPE_ACCESS, SHIPPING_RELEVANT_STATUSES, isShippingAllowedEmail, type Role, type NoteType, type OrderStatus } from './constants'
+import { NOTE_TYPE_ACCESS, SHIPPING_RELEVANT_STATUSES, isRestrictedAdminEmail, isShippingAllowedEmail, type Role, type NoteType, type OrderStatus } from './constants'
 
 const FINANCE_FIELDS = ['totalAmount', 'advancePaid', 'balanceDue', 'paymentStatus', 'invoice'] as const
 
@@ -218,14 +218,20 @@ export function canViewOrderDetail(
  * Notes without a noteType (pre-migration data) are treated as 'general' so
  * nothing silently disappears for roles that can see general notes.
  */
-export function filterNotesForRole<T extends { noteType?: string }>(notes: T[], role: Role): T[] {
-  const allowed = NOTE_TYPE_ACCESS[role] ?? []
+export function filterNotesForRole<T extends { noteType?: string }>(notes: T[], role: Role, email?: string | null): T[] {
+  const allowed = noteTypesFor(role, email)
   return notes.filter((note) => allowed.includes((note.noteType || 'general') as NoteType))
 }
 
 /** Whether a role may create a note tagged with the given domain. */
-export function canWriteNoteType(role: Role, noteType: NoteType): boolean {
-  return (NOTE_TYPE_ACCESS[role] ?? []).includes(noteType)
+export function canWriteNoteType(role: Role, noteType: NoteType, email?: string | null): boolean {
+  return noteTypesFor(role, email).includes(noteType)
+}
+
+/** A role's note domains, plus 'creative' for an email with Sales + Creative access. */
+function noteTypesFor(role: Role, email?: string | null): NoteType[] {
+  const allowed = NOTE_TYPE_ACCESS[role] ?? []
+  return isRestrictedAdminEmail(email) && !allowed.includes('creative') ? [...allowed, 'creative'] : allowed
 }
 
 // ActivityLog descriptions are free-text and frequently embed the exact
@@ -302,7 +308,7 @@ export function stripSensitiveOrderFields<T extends Record<string, unknown>>(ord
     clone = { ...clone, client: clientClone }
   }
   if (Array.isArray(clone.notes)) {
-    clone = { ...clone, notes: filterNotesForRole(clone.notes as { noteType?: string }[], role) }
+    clone = { ...clone, notes: filterNotesForRole(clone.notes as { noteType?: string }[], role, email) }
   }
   return clone
 }

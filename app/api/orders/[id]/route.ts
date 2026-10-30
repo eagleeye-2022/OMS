@@ -13,7 +13,7 @@ import {
   updateShippingDetailsSchema,
 } from '@/validations/order.schema'
 import { applyDirectStatusUpdate, getDispatchBlockReason } from '@/lib/order-status'
-import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES, isCreativeStatusLocked } from '@/lib/constants'
+import { getProductionBlockReason, PRE_DESIGN_APPROVAL_STATUSES, hasFullCreativeAccess, isCreativeStatusLocked } from '@/lib/constants'
 import { stripSensitiveOrderFields, ORDER_CLIENT_DETAIL_FIELDS, canViewOrderDetail, isOrderAssignedToSelf, filterActivityLogsForRole, canAccessShipping } from '@/lib/order-visibility'
 import { PRODUCTION_STAGE_KEY_LABEL, type ProductionStage } from '@/lib/constants'
 
@@ -87,9 +87,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // ── Intent: Design Status Update ─────────────────────────────────────────
-    // Triggered by presence of designStatus. Allowed for: admin, creative.
+    // Triggered by presence of designStatus. Allowed for: admin, creative, and
+    // full-Creative-access emails (hasFullCreativeAccess).
     if ('designStatus' in body) {
-      if (role !== 'admin' && role !== 'creative') {
+      if (role !== 'creative' && !hasFullCreativeAccess(session)) {
         return NextResponse.json(
           { success: false, error: 'Only the creative team or admin can update design status' },
           { status: 403 }

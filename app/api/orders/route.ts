@@ -46,6 +46,9 @@ export async function GET(req: NextRequest) {
     // Deliberately narrower than CLOSED_ORDER_STATUSES — a delivered order
     // with a real unpaid balance is still a legitimate receivable.
     const excludeCancelled = searchParams.get('excludeCancelled') === 'true'
+    // Opt-in for the Orders page only — the work queues (Creative, Production,
+    // Shipping) keep the default nearest-deadline order below.
+    const sortLatestFirst = searchParams.get('sort') === 'latest'
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
     const skip = (page - 1) * limit
@@ -149,7 +152,7 @@ export async function GET(req: NextRequest) {
         // no "no deadline" case here) — overdue orders naturally sort first
         // too, since their date is further in the past. orderNumber is a
         // stable, unique tiebreaker for orders sharing the same deliveryDate.
-        .sort({ deliveryDate: 1, orderNumber: 1 })
+        .sort({ deliveryDate: sortLatestFirst ? -1 : 1, orderNumber: 1 })
         .skip(skip)
         .limit(limit)
         .populate('client', 'companyName')
